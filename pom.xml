@@ -17,6 +17,7 @@
 
     <modules>
         <module>healthcare-api</module>
+        <module>healthcare-audit</module>
     </modules>
 
 </project>
