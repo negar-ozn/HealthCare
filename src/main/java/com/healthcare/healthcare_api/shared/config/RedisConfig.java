@@ -7,4 +7,5 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 >>>>>>> origin/dev
 public class RedisConfig {
+
 }

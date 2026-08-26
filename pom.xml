@@ -120,6 +120,7 @@
             <scope>test</scope>
 >>>>>>> origin/dev
         </dependency>
+
     </dependencies>
 
     <build>
