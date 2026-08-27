@@ -1,0 +1,10 @@
+CREATE TABLE permissions
+(
+
+    id          BIGSERIAL PRIMARY KEY,
+    permission  VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(250),
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
