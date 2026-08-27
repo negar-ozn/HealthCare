@@ -19,6 +19,7 @@
         <module>healthcare-api</module>
         <module>healthcare-audit</module>
         <module>healthcare-auth</module>
+        <module>healthcare-notification</module>
     </modules>
 
 </project>
