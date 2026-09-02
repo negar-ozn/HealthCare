@@ -6,6 +6,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.HealthCare</groupId>
     <artifactId>healthcare-system</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -15,7 +22,12 @@
     <name>HealthCare System</name>
     <description>Healthcare microservices monorepo</description>
 
+    <properties>
+        <java.version>25</java.version>
+    </properties>
+
     <modules>
+        <module>common-kafka</module>
         <module>healthcare-api</module>
         <module>healthcare-audit</module>
         <module>healthcare-auth</module>

@@ -12,6 +12,7 @@ CREATE TABLE audit_logs
     status            VARCHAR(20)  NOT NULL,
     details           TEXT,
     verification_link VARCHAR(500) UNIQUE,
+    event_type        VARCHAR(100),
     version           BIGINT       NOT NULL DEFAULT 0
 );
 

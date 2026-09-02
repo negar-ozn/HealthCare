@@ -1,6 +1,6 @@
 package com.healthcare.healthcare_notification.kafka.consumer;
 
-import com.healthcare.healthcare_notification.kafka.event.NotificationEvent;
+import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.healthcare_notification.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

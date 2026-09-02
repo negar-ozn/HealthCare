@@ -1,6 +1,6 @@
 package com.healthcare.healthcare_notification.template;
 
-import com.healthcare.healthcare_notification.kafka.event.NotificationEvent;
+import com.healthcare.common_kafka.event.NotificationEvent;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -25,15 +25,6 @@ public class EmailTemplateService {
             case APPOINTMENT_CREATED -> "appointment-created";
             default -> throw new IllegalArgumentException("Unsupported notification type.");
         };
-        return templateEngine.process(
-                template,
-                context);
+        return templateEngine.process(template, context);
     }
 }
-
-
-//switch (event.type()) {
-//        case WELCOME -> renderWelcome(event.variables());
-//        case PASSWORD_RESET -> renderPasswordReset(event.variables());
-//        case APPOINTMENT_CREATED -> renderAppointmentCreated(event.variables());
-//        }

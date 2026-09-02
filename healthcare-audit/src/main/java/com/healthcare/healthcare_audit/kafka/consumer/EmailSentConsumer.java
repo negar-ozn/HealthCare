@@ -1,7 +1,6 @@
 package com.healthcare.healthcare_audit.kafka.consumer;
 
-
-import com.healthcare.healthcare_audit.kafka.event.EmailSentEvent;
+import com.healthcare.common_kafka.event.EmailSentEvent;
 import com.healthcare.healthcare_audit.service.AuditService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

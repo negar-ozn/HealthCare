@@ -1,13 +1,14 @@
 package com.healthcare.healthcare_notification.service;
 
+import com.healthcare.common_kafka.producer.CommonKafkaProducer;
+import com.healthcare.common_kafka.event.NotificationEvent;
+import com.healthcare.common_kafka.event.EmailSentEvent;
 import com.healthcare.healthcare_notification.dto.VerificationEmailRequest;
 import com.healthcare.healthcare_notification.entity.Notification;
 import com.healthcare.healthcare_notification.enums.EntityName;
+import com.healthcare.healthcare_notification.enums.NotificationSource;
 import com.healthcare.healthcare_notification.enums.NotificationStatus;
 import com.healthcare.healthcare_notification.enums.NotificationType;
-import com.healthcare.healthcare_notification.kafka.event.EmailSentEvent;
-import com.healthcare.healthcare_notification.kafka.event.NotificationEvent;
-import com.healthcare.healthcare_notification.kafka.producer.EmailSentProducer;
 import com.healthcare.healthcare_notification.repository.NotificationRepository;
 import com.healthcare.healthcare_notification.template.EmailTemplateService;
 import jakarta.transaction.Transactional;
@@ -22,13 +23,14 @@ public class NotificationService {
     private final NotificationRepository repository;
     private final EmailTemplateService templateService;
     private final EmailService emailService;
-    private final EmailSentProducer emailSentProducer;
+    private final CommonKafkaProducer commonKafkaProducer;
 
-    public NotificationService(NotificationRepository repository, EmailTemplateService templateService, EmailService emailService, EmailSentProducer emailSentProducer) {
+    public NotificationService(NotificationRepository repository, EmailTemplateService templateService,
+                               EmailService emailService, CommonKafkaProducer commonKafkaProducer) {
         this.repository = repository;
         this.templateService = templateService;
         this.emailService = emailService;
-        this.emailSentProducer = emailSentProducer;
+        this.commonKafkaProducer = commonKafkaProducer;
     }
 
     public void processNotification(NotificationEvent event) {
@@ -37,8 +39,8 @@ public class NotificationService {
                 .correlationId(event.correlationId())
                 .recipient(event.recipient())
                 .subject(event.subject())
-                .notificationSource(event.sender())
-                .type(event.type())
+                .notificationSource(NotificationSource.valueOf(event.sender().toString()))
+                .type(NotificationType.valueOf(event.type().toString()))
                 .status(NotificationStatus.PENDING)
                 .build();
         repository.save(notification);
@@ -73,13 +75,13 @@ public class NotificationService {
                 request.verificationLink()
         );
         emailService.sendEmail(request.email(), subject, body);
-        emailSentProducer.publishEmailSentEvent(EmailSentEvent.builder()
+        commonKafkaProducer.publishEmailSentEvent(EmailSentEvent.builder()
                 .userId(request.userId())
                 .email(request.email())
                 .username(request.email())
-                .auditAction(NotificationType.EMAIL_SENT.name())
+                .action(NotificationType.EMAIL_SENT.name())
                 .entityName(EntityName.NOTIFICATION.name())
-                .auditStatus(NotificationStatus.SENT.name())
+                .status(NotificationStatus.SENT.name())
                 .details("Verification email sent successfully")
                 .build());
     }

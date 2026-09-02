@@ -1,5 +1,7 @@
 package com.healthcare.healthcare_auth.service;
 
+import com.healthcare.common_kafka.producer.CommonKafkaProducer;
+import com.healthcare.common_kafka.event.*;
 import com.healthcare.healthcare_auth.dto.*;
 import com.healthcare.healthcare_auth.emailVerification.EmailVerificationService;
 import com.healthcare.healthcare_auth.emailVerification.EmailVerificationToken;
@@ -8,9 +10,7 @@ import com.healthcare.healthcare_auth.entity.Role;
 import com.healthcare.healthcare_auth.entity.Users;
 import com.healthcare.healthcare_auth.enums.*;
 import com.healthcare.healthcare_auth.feignClient.NotificationClient;
-import com.healthcare.healthcare_auth.kafka.event.*;
 import com.healthcare.healthcare_auth.exception.*;
-import com.healthcare.healthcare_auth.kafka.producer.*;
 import com.healthcare.healthcare_auth.repository.RoleRepository;
 import com.healthcare.healthcare_auth.repository.UsersRepository;
 import com.healthcare.healthcare_auth.security.AuthenticatedUser;
@@ -39,35 +39,25 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
-    private final UserLoginProducer userLoginProducer;
-    private final UserLogoutProducer userLogoutProducer;
-    private final NotificationProducer notificationProducer;
-    private final UserRegisteredProducer userRegisteredProducer;
-    private final RefreshTokenProducer refreshTokenProducer;
     private final LoginAttemptService loginAttemptService;
     private final EmailVerificationService emailVerificationService;
+    private final CommonKafkaProducer commonKafkaProducer;
     private final NotificationClient notificationClient;
 
     public AuthenticationService(UsersRepository usersRepository, RoleRepository roleRepository,
                                  PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
                                  JwtService jwtService, RefreshTokenService refreshTokenService,
-                                 UserLoginProducer userLoginProducer, UserLogoutProducer userLogoutProducer,
-                                 NotificationProducer notificationProducer, UserRegisteredProducer userRegisteredProducer,
-                                 RefreshTokenProducer refreshTokenProducer, LoginAttemptService loginAttemptService,
-                                 EmailVerificationService emailVerificationService, NotificationClient notificationClient) {
+                                 LoginAttemptService loginAttemptService, EmailVerificationService emailVerificationService,
+                                 CommonKafkaProducer commonKafkaProducer, NotificationClient notificationClient) {
         this.usersRepository = usersRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
-        this.userLoginProducer = userLoginProducer;
-        this.userLogoutProducer = userLogoutProducer;
-        this.notificationProducer = notificationProducer;
-        this.userRegisteredProducer = userRegisteredProducer;
-        this.refreshTokenProducer = refreshTokenProducer;
         this.loginAttemptService = loginAttemptService;
         this.emailVerificationService = emailVerificationService;
+        this.commonKafkaProducer = commonKafkaProducer;
         this.notificationClient = notificationClient;
     }
 
@@ -121,23 +111,23 @@ public class AuthenticationService {
         EmailVerificationToken emailVerificationToken = emailVerificationService.createToken(savedUser);
 
         // 7. Publish UserRegistered event
-        userRegisteredProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
+        commonKafkaProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .verificationLink(verificationLink(String.valueOf(emailVerificationToken)))
-                .auction(ActionType.REGISTER.name())
+                .action(ActionType.REGISTER.name())
                 .status(Status.SUCCESSFUL.name())
                 .detail("User registered successfully")
                 .entityName(EntityName.USER.name())
                 .build());
 
         // 8. Publish notification event
-        notificationProducer.publish(NotificationEvent.builder()
+        commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
                 .correlationId(UUID.randomUUID().toString())
-                .type(NotificationType.EMAIL_VERIFICATION)
+                .type(com.healthcare.common_kafka.enums.NotificationType.valueOf(NotificationType.EMAIL_VERIFICATION.name()))
                 .recipient(savedUser.getEmail())
-                .sender(NotificationSource.AUTH)
+                .sender(com.healthcare.common_kafka.enums.NotificationSource.valueOf(NotificationSource.AUTH.name()))
                 .subject("Verify your email.")
                 .variables(Map.of("username", user.getUsername(),
                         "verificationLink", verificationLink(String.valueOf(emailVerificationToken))))
@@ -184,13 +174,13 @@ public class AuthenticationService {
             String accessToken = jwtService.generateToken(user);
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
-            userLoginProducer.publishUserLoginEvent(UserLoginEvent.builder()
+            commonKafkaProducer.publishUserLoginEvent(CoreEvent.builder()
                     .userId(user.getId())
                     .username(user.getUsername())
                     .action(ActionType.LOGIN.name())
-                    .entityName(EntityName.USER.name())
+                    .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
                     .status(Status.SUCCESSFUL.name())
-                    .detail("User logged in successfully")
+                    .details("User logged in successfully")
                     .build());
             ;
 
@@ -203,13 +193,13 @@ public class AuthenticationService {
 
         } catch (BadCredentialsException ex) {
             loginAttemptService.loginFailed(request.username());
-            userLoginProducer.publishUserLoginEvent(UserLoginEvent.builder()
+            commonKafkaProducer.publishUserLoginEvent(CoreEvent.builder()
                     .userId(request.userId())
                     .username(request.username())
                     .action(ActionType.LOGIN.name())
-                    .entityName(EntityName.USER.name())
+                    .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
                     .status(Status.FAILED.name())
-                    .detail("Invalid username or password")
+                    .details("Invalid username or password")
                     .build());
             throw new BadCredentialsException("Invalid username or password");
         } catch (DisabledException ex) {
@@ -224,13 +214,13 @@ public class AuthenticationService {
         RefreshToken refreshToken = refreshTokenService.validateRefreshToken(request.refreshToken());
         Users user = refreshToken.getUser();
         String accessToken = jwtService.generateToken(user);
-        refreshTokenProducer.publishRefreshTokenEvent(RefreshTokenEvent.builder()
+        commonKafkaProducer.publishRefreshTokenEvent(CoreEvent.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .action(ActionType.REFRESH_TOKEN.name())
-                .entityName(EntityName.USER.name())
+                .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
                 .status(Status.INVALID_REFRESH_TOKEN.name())
-                .detail("Refresh token is invalid.")
+                .details("Refresh token is invalid.")
                 .build());
 
         return LoginResponse.builder()
@@ -246,12 +236,12 @@ public class AuthenticationService {
         RefreshToken refreshToken = refreshTokenService.findByToken(request.refreshToken());
         refreshTokenService.revoke(refreshToken);
         Users user = refreshToken.getUser();
-        userLogoutProducer.publishUserLogoutEvent(UserLogoutEvent.builder()
+        commonKafkaProducer.publishUserLogoutEvent(CoreEvent.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .action(ActionType.LOGOUT.name())
                 .status(Status.SUCCESSFUL.name())
-                .detail("User logged out successfully.")
+                .details("User logged out successfully.")
                 .build());
     }
 

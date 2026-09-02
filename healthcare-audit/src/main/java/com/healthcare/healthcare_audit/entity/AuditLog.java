@@ -2,7 +2,6 @@ package com.healthcare.healthcare_audit.entity;
 
 import com.healthcare.healthcare_audit.enums.AuditAction;
 import com.healthcare.healthcare_audit.enums.AuditStatus;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,6 +41,8 @@ public class AuditLog {
     private String details;
     @Column(length = 500, unique = true)
     private String verificationLink;
+    @Column(length = 100)
+    private String eventType;
     @Version
     private Long version;
 }

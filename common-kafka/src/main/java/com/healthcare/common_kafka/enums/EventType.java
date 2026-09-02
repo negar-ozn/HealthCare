@@ -1,0 +1,60 @@
+package com.healthcare.common_kafka.enums;
+
+public enum EventType {
+
+    PATIENT_CREATED,
+    PATIENT_UPDATED,
+    PATIENT_DELETED,
+    PATIENT_READ,
+
+    // Doctor
+    DOCTOR_CREATED,
+    DOCTOR_UPDATED,
+    DOCTOR_DELETED,
+    DOCTOR_READ,
+
+    // Appointment
+    APPOINTMENT_BOOKED,
+    APPOINTMENT_UPDATED,
+    APPOINTMENT_CANCELED,
+    APPOINTMENT_COMPLETED,
+    APPOINTMENT_READ,
+
+    // Department
+    DEPARTMENT_CREATED,
+    DEPARTMENT_UPDATED,
+    DEPARTMENT_READ,
+
+    // Medical Record
+    MEDICAL_RECORD_CREATED,
+    MEDICAL_RECORD_UPDATED,
+    MEDICAL_RECORD_COMPLETED,
+    MEDICAL_RECORD_READ,
+
+    // Payment
+    PAYMENT_CREATED,
+    PAYMENT_READ,
+
+    // Personnel
+    PERSONNEL_CREATED,
+    PERSONNEL_UPDATED,
+    PERSONNEL_DELETED,
+    PERSONNEL_READ,
+
+    // Schedule
+    SCHEDULE_CREATED,
+    SCHEDULE_UPDATED,
+    SCHEDULE_DELETED,
+    SCHEDULE_READ,
+
+    // Authentication
+    USER_REGISTERED,
+    USER_LOGIN,
+    USER_LOGOUT,
+    REFRESH_TOKEN,
+    PASSWORD_RESET,
+
+    // Notification
+    NOTIFICATION_EVENTS,
+    EMAIL_SENT,
+}

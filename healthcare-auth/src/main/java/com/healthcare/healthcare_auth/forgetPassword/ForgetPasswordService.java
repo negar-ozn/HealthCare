@@ -1,11 +1,11 @@
 package com.healthcare.healthcare_auth.forgetPassword;
 
+import com.healthcare.common_kafka.producer.CommonKafkaProducer;
+import com.healthcare.common_kafka.event.CoreEvent;
 import com.healthcare.healthcare_auth.entity.Users;
 import com.healthcare.healthcare_auth.enums.*;
 import com.healthcare.healthcare_auth.exception.InvalidPasswordResetTokenException;
 import com.healthcare.healthcare_auth.exception.PasswordResetTokenExpiredException;
-import com.healthcare.healthcare_auth.kafka.event.PasswordResetEvent;
-import com.healthcare.healthcare_auth.kafka.producer.PasswordResetProducer;
 import com.healthcare.healthcare_auth.repository.RefreshTokenRepository;
 import com.healthcare.healthcare_auth.repository.UsersRepository;
 import jakarta.transaction.Transactional;
@@ -24,14 +24,15 @@ public class ForgetPasswordService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final PasswordResetProducer passwordResetProducer;
+    private final CommonKafkaProducer commonKafkaProducer;
 
-    public ForgetPasswordService(UsersRepository usersRepository, PasswordResetTokenRepository passwordResetTokenRepository, PasswordEncoder passwordEncoder, RefreshTokenRepository refreshTokenRepository, PasswordResetProducer passwordResetProducer) {
+    public ForgetPasswordService(UsersRepository usersRepository, PasswordResetTokenRepository passwordResetTokenRepository,
+                                 PasswordEncoder passwordEncoder, RefreshTokenRepository refreshTokenRepository, CommonKafkaProducer commonKafkaProducer) {
         this.usersRepository = usersRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
-        this.passwordResetProducer = passwordResetProducer;
+        this.commonKafkaProducer = commonKafkaProducer;
     }
 
     public void forgotPassword(String email) {
@@ -49,13 +50,13 @@ public class ForgetPasswordService {
 
                     passwordResetTokenRepository.save(token);
 
-                    passwordResetProducer.publishPasswordResetEvent(PasswordResetEvent.builder()
+                    commonKafkaProducer.publishPasswordResetEvent(CoreEvent.builder()
                             .userId(user.getId())
                             .username(user.getUsername())
                             .action(ActionType.RESET_PASSWORD.name())
-                            .entityName(EntityName.PASSWORD_RESET_TOKEN.name())
+                            .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.PASSWORD_RESET_TOKEN.name()))
                             .status(Status.SUCCESSFUL.name())
-                            .detail("Password reset successfully.")
+                            .details("Password reset successfully.")
                             .build());
 
                 });

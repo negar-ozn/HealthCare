@@ -1,12 +1,12 @@
 package com.healthcare.healthcare_auth.emailVerification;
 
+import com.healthcare.common_kafka.producer.CommonKafkaProducer;
+import com.healthcare.common_kafka.event.NotificationEvent;
+import com.healthcare.common_kafka.enums.NotificationSource;
+import com.healthcare.common_kafka.enums.NotificationType;
 import com.healthcare.healthcare_auth.entity.Users;
-import com.healthcare.healthcare_auth.enums.NotificationSource;
-import com.healthcare.healthcare_auth.enums.NotificationType;
-import com.healthcare.healthcare_auth.kafka.event.NotificationEvent;
 import com.healthcare.healthcare_auth.exception.InvalidEmailVerificationTokenException;
 import com.healthcare.healthcare_auth.exception.EmailVerificationTokenExpiredException;
-import com.healthcare.healthcare_auth.kafka.producer.NotificationProducer;
 import com.healthcare.healthcare_auth.repository.UsersRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -21,12 +21,13 @@ public class EmailVerificationService {
 
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final UsersRepository userRepository;
-    private final NotificationProducer notificationProducer;
+    private final CommonKafkaProducer commonKafkaProducer;
 
-    public EmailVerificationService(EmailVerificationTokenRepository emailVerificationTokenRepository, UsersRepository userRepository, NotificationProducer notificationProducer) {
+    public EmailVerificationService(EmailVerificationTokenRepository emailVerificationTokenRepository,
+                                    UsersRepository userRepository, CommonKafkaProducer commonKafkaProducer) {
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.userRepository = userRepository;
-        this.notificationProducer = notificationProducer;
+        this.commonKafkaProducer = commonKafkaProducer;
     }
 
     public EmailVerificationToken createToken(Users user) {
@@ -58,14 +59,14 @@ public class EmailVerificationService {
         emailVerificationTokenRepository.delete(verificationToken);
 
         // Send email notification
-        notificationProducer.publish(new NotificationEvent(
-                        UUID.randomUUID().toString(),
-                        NotificationType.WELCOME,
-                        user.getEmail(),
-                        NotificationSource.AUTH,
-                        "Welcome to Healthcare.",
-                        Map.of("Username", user.getUsername())
-                )
-        );
+        commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
+                        .correlationId(UUID.randomUUID().toString())
+                        .type(NotificationType.WELCOME)
+                        .recipient(user.getEmail())
+                        .sender(NotificationSource.AUTH)
+                        .subject("Welcome to Healthcare.")
+                        .variables(Map.of("Username", user.getUsername()))
+                        .eventType("NOTIFICATION_EVENTS")
+                        .build());
     }
 }
