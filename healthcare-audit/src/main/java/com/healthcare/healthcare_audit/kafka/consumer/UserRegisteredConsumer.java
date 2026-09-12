@@ -14,7 +14,9 @@ public class UserRegisteredConsumer {
         this.auditService = auditService;
     }
 
-    @KafkaListener(topics = "user-registered")
+    @KafkaListener(topics = "user-registered",
+            groupId = "healthcare-audit",
+            containerFactory = "userRegisteredKafkaListenerContainerFactory")
     public void consume(UserRegisteredEvent event) {
 
         auditService.createUserRegisteredLog(event);

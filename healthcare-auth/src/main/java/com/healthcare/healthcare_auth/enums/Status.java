@@ -7,7 +7,7 @@ public enum Status {
     EMAIL_SENT,
     EMAIL_FAILED,
     REFRESH_TOKEN,
-    VERIFY_EMAIL,
+    EMAIL_VERIFIED,
     LOCK_ACCOUNT,
     INVALID_REFRESH_TOKEN
 }

@@ -21,6 +21,7 @@ public class EmailTemplateService {
         String template = switch (event.type()) {
             case WELCOME -> "welcome";
             case PASSWORD_RESET -> "password-reset";
+            case NEW_PASSWORD -> "new-password";
             case EMAIL_VERIFICATION -> "email-verification";
             case APPOINTMENT_CREATED -> "appointment-created";
             default -> throw new IllegalArgumentException("Unsupported notification type.");

@@ -38,12 +38,18 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
 
-
         http.authorizeHttpRequests(auth -> auth
                 //users don't have JWT yet, so all users can access these public endpoints
-                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/api/v1/auth/register").permitAll()
+                .requestMatchers(
+                        "/api/v1/auth/register",
+                        "/api/v1/auth/verifyEmail",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/logout",
+                        "/api/v1/auth/forgetPassword",
+                        "/api/v1/auth/resetPassword",
+                        "/api/v1/auth/setNewPassword"
+                ).permitAll()
 
                 // for protected endpoints which require authentication
                 .anyRequest().authenticated()

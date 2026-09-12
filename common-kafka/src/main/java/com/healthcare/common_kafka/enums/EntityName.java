@@ -17,5 +17,6 @@ public enum EntityName {
     PERMISSION,
     REFRESH_TOKEN,
     ROLE,
-    USERS
+    USER,
+    PASSWORD_RESET_TOKEN
 }

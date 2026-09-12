@@ -1,8 +1,8 @@
 package com.healthcare.healthcare_audit.service;
 
 import com.healthcare.common_kafka.event.CoreEvent;
+import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.common_kafka.event.UserRegisteredEvent;
-import com.healthcare.common_kafka.event.EmailSentEvent;
 import com.healthcare.healthcare_audit.dto.AuditRequest;
 import com.healthcare.healthcare_audit.dto.AuditResponse;
 import com.healthcare.healthcare_audit.enums.AuditAction;
@@ -21,7 +21,6 @@ public interface AuditService {
     void createAudit(AuditRequest request);
     AuditResponse getById(Long id);
     void createUserRegisteredLog(UserRegisteredEvent event);
-    void createEmailSentEvent(EmailSentEvent event);
     void createEvent(CoreEvent event);
 }
 

@@ -23,7 +23,7 @@ public class NotificationConsumerConfig {
     public ConsumerFactory<String, NotificationEvent> notificationConsumerFactory() {
 
         JacksonJsonDeserializer<NotificationEvent> deserializer = new JacksonJsonDeserializer<>(NotificationEvent.class);
-        deserializer.addTrustedPackages("com.healthcare.common_kafka.event");
+        deserializer.setUseTypeHeaders(false);
         return new DefaultKafkaConsumerFactory<>(
                 kafkaProperties.buildConsumerProperties(),
                 new StringDeserializer(),

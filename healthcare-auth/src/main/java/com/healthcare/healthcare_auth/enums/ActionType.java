@@ -8,5 +8,7 @@ public enum ActionType {
     WELCOME,
     EMAIL_VERIFICATION,
     RESET_PASSWORD,
-    REFRESH_TOKEN
+    REFRESH_TOKEN,
+    INTROSPECT,
+    EMAIL_VERIFIED
 }

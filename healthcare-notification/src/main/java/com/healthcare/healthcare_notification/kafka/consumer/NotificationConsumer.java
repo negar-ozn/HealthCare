@@ -16,11 +16,13 @@ public class NotificationConsumer {
         this.notificationService = notificationService;
     }
 
-    @KafkaListener(topics = "notification-events", groupId = "healthcare-notification-group")
+    @KafkaListener(topics = "notification-events",
+            groupId = "healthcare-notification-group",
+            containerFactory = "notificationKafkaListenerContainerFactory")
     public void consume(NotificationEvent event) {
 
         log.info("Notification received. correlationId={}", event.correlationId());
-        notificationService.processNotification(event);
+        notificationService.processEmailNotification(event);
 
     }
 }

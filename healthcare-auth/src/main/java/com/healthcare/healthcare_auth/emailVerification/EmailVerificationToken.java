@@ -21,7 +21,7 @@ public class EmailVerificationToken {
     @Column(nullable = false, unique = true)
     private String token;
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
     @Column(nullable = false)
     private Instant expiryDate;

@@ -3,9 +3,11 @@ package com.healthcare.common_kafka.enums;
 public enum NotificationType {
 
     WELCOME,
+    WELCOME_EMAIL_SENT,
     EMAIL_VERIFICATION,
     EMAIL_SENT,
     PASSWORD_RESET,
+    NEW_PASSWORD,
     APPOINTMENT_CREATED,
     APPOINTMENT_UPDATED,
     APPOINTMENT_CANCELLED,

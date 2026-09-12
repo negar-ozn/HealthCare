@@ -8,6 +8,7 @@ import lombok.Builder;
 public record CoreEvent (
 
         Long userId,
+        String email,
         String username,
         String action,
         EntityName entityName,

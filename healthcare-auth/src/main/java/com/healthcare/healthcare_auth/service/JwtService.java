@@ -1,8 +1,10 @@
 package com.healthcare.healthcare_auth.service;
 
 import com.healthcare.healthcare_auth.configProperty.JwtProperties;
+import com.healthcare.healthcare_auth.entity.Role;
 import com.healthcare.healthcare_auth.entity.Users;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -33,7 +35,7 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, Users user) {
-        extraClaims.put("roles", user.getRoles());
+        extraClaims.put("roles", user.getRoles().stream().map(Role::getRole).toList());
         return buildToken(extraClaims, user, jwtProperties.getAccessTokenExpiration());
     }
 
@@ -51,6 +53,19 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public Claims extractClaimsIgnoringExpiration(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
     }
 
     public String extractRole(String token) {

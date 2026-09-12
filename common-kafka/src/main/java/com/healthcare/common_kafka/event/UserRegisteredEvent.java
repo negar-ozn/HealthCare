@@ -1,5 +1,7 @@
 package com.healthcare.common_kafka.event;
 
+import com.healthcare.common_kafka.enums.EntityName;
+import com.healthcare.common_kafka.enums.EventType;
 import lombok.Builder;
 
 @Builder
@@ -12,7 +14,7 @@ public record UserRegisteredEvent(
         String action,
         String status,
         String detail,
-        String entityName,
-        String eventType
+        EntityName entityName,
+        EventType eventType
 ) {
 }

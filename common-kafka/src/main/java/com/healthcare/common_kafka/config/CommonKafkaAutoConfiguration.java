@@ -1,7 +1,6 @@
 package com.healthcare.common_kafka.config;
 
 import com.healthcare.common_kafka.event.CoreEvent;
-import com.healthcare.common_kafka.event.EmailSentEvent;
 import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.common_kafka.event.UserRegisteredEvent;
 import com.healthcare.common_kafka.producer.CommonKafkaProducer;
@@ -44,15 +43,6 @@ public class CommonKafkaAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "emailSentEventKafkaTemplate")
-    public KafkaTemplate<String, EmailSentEvent> emailSentEventKafkaTemplate(KafkaProperties kafkaProperties) {
-
-        ProducerFactory<String, EmailSentEvent> producerFactory =
-                new DefaultKafkaProducerFactory<>(producerProperties(kafkaProperties));
-        return new KafkaTemplate<>(producerFactory);
-    }
-
-    @Bean
     @ConditionalOnMissingBean(name = "notificationEventKafkaTemplate")
     public KafkaTemplate<String, NotificationEvent> notificationEventKafkaTemplate(KafkaProperties kafkaProperties) {
 
@@ -74,12 +64,10 @@ public class CommonKafkaAutoConfiguration {
     @ConditionalOnMissingBean
     public CommonKafkaProducer commonKafkaProducer(
             KafkaTemplate<String, CoreEvent> coreEventKafkaTemplate,
-            KafkaTemplate<String, EmailSentEvent> emailSentEventKafkaTemplate,
             KafkaTemplate<String, NotificationEvent> notificationEventKafkaTemplate,
             KafkaTemplate<String, UserRegisteredEvent> userRegisteredEventKafkaTemplate) {
 
-        return new CommonKafkaProducer(coreEventKafkaTemplate, emailSentEventKafkaTemplate,
-                notificationEventKafkaTemplate, userRegisteredEventKafkaTemplate
+        return new CommonKafkaProducer(coreEventKafkaTemplate, notificationEventKafkaTemplate, userRegisteredEventKafkaTemplate
         );
     }
 }

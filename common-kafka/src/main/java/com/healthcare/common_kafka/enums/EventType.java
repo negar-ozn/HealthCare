@@ -52,9 +52,14 @@ public enum EventType {
     USER_LOGIN,
     USER_LOGOUT,
     REFRESH_TOKEN,
+    INTROSPECT,
     PASSWORD_RESET,
+    NEW_PASSWORD,
 
     // Notification
     NOTIFICATION_EVENTS,
+    WELCOME_EMAIL,
     EMAIL_SENT,
+    EMAIL_VERIFIED,
+    FORGET_PASSWORD_EMAIL
 }

@@ -26,6 +26,15 @@ public class GlobalExceptionHandler {
                 ErrorCode.USER_NOT_FOUND, ex.getMessage(), request, null);
     }
 
+    @ApiResponse(responseCode = "404", description = "Email not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+    @ExceptionHandler(EmailNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailNotFound(EmailNotFoundException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ErrorCode.USER_NOT_FOUND, ex.getMessage(), request, null);
+    }
+
     @ApiResponse(responseCode = "404", description = "Role not found",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(RoleNotFoundException.class)

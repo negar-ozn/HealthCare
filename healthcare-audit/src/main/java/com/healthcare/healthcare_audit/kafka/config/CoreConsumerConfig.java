@@ -23,7 +23,7 @@ public class CoreConsumerConfig {
     public ConsumerFactory<String, CoreEvent> coreConsumerFactory() {
 
         JacksonJsonDeserializer<CoreEvent> deserializer = new JacksonJsonDeserializer<>(CoreEvent.class);
-        deserializer.addTrustedPackages("com.healthcare.common_kafka.event");
+        deserializer.setUseTypeHeaders(false);
         return new DefaultKafkaConsumerFactory<>(
                 kafkaProperties.buildConsumerProperties(),
                 new StringDeserializer(),

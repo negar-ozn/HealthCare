@@ -56,9 +56,14 @@ public class KafkaTopics {
     public static final String USER_LOGIN = "user-login";
     public static final String USER_LOGOUT = "user-logout";
     public static final String REFRESH_TOKEN = "refresh-token";
+    public static final String INTROSPECT = "introspect";
     public static final String PASSWORD_RESET = "password-reset";
+    public static final String NEW_PASSWORD = "new-password";
 
     // Notification
     public static final String NOTIFICATION_EVENTS = "notification-events";
+    public static final String WELCOME_EMAIL = "welcome-email";
     public static final String EMAIL_SENT = "email-sent";
+    public static final String EMAIL_VERIFIED = "email-verified";
+    public static final String FORGET_PASSWORD_EMAIL = "forget-password-email";
 }

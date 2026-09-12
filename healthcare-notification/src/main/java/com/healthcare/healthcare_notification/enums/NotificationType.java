@@ -3,9 +3,11 @@ package com.healthcare.healthcare_notification.enums;
 public enum NotificationType {
 
     WELCOME,
+    WELCOME_EMAIL_SENT,
     EMAIL_VERIFICATION,
     EMAIL_SENT,
     PASSWORD_RESET,
+    FORGET_PASSWORD_EMAIL,
     APPOINTMENT_CREATED,
     APPOINTMENT_UPDATED,
     APPOINTMENT_CANCELLED,

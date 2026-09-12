@@ -1,5 +1,6 @@
 package com.healthcare.common_kafka.event;
 
+import com.healthcare.common_kafka.enums.EventType;
 import com.healthcare.common_kafka.enums.NotificationSource;
 import com.healthcare.common_kafka.enums.NotificationType;
 import lombok.Builder;
@@ -15,6 +16,7 @@ public record NotificationEvent(
         NotificationSource sender,
         String subject,
         Map<String, Object> variables,
-        String eventType
+        EventType eventType,
+        Long userId
 ) {
 }

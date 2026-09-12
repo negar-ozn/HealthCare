@@ -46,6 +46,7 @@ public final class ApiDescription {
     public static final String RESET_PASSWORD = """
             Resets the password.
             """;
+    public static final String SET_NEW_PASSWORD = "Sets a new password.";
     public static final String REGISTER_SUCCESS = "User registered successfully";
     public static final String REGISTER_FAILED = "Validation failed";
     public static final String EMAIL_DUPLICATED = "Email already exists";

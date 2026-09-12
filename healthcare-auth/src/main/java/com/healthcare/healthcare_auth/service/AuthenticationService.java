@@ -1,5 +1,9 @@
 package com.healthcare.healthcare_auth.service;
 
+import com.healthcare.common_kafka.enums.EventType;
+import com.healthcare.common_kafka.enums.EntityName;
+import com.healthcare.common_kafka.enums.NotificationType;
+import com.healthcare.common_kafka.enums.NotificationSource;
 import com.healthcare.common_kafka.producer.CommonKafkaProducer;
 import com.healthcare.common_kafka.event.*;
 import com.healthcare.healthcare_auth.dto.*;
@@ -9,11 +13,12 @@ import com.healthcare.healthcare_auth.entity.RefreshToken;
 import com.healthcare.healthcare_auth.entity.Role;
 import com.healthcare.healthcare_auth.entity.Users;
 import com.healthcare.healthcare_auth.enums.*;
-import com.healthcare.healthcare_auth.feignClient.NotificationClient;
 import com.healthcare.healthcare_auth.exception.*;
 import com.healthcare.healthcare_auth.repository.RoleRepository;
 import com.healthcare.healthcare_auth.repository.UsersRepository;
 import com.healthcare.healthcare_auth.security.AuthenticatedUser;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.*;
@@ -24,13 +29,15 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Transactional
 @Service
 public class AuthenticationService {
 
-    @Value("${app.verification.base-url}")
+    @Value("${app.base-url}")
     private String emailVerificationURL;
 
     private final UsersRepository usersRepository;
@@ -42,13 +49,12 @@ public class AuthenticationService {
     private final LoginAttemptService loginAttemptService;
     private final EmailVerificationService emailVerificationService;
     private final CommonKafkaProducer commonKafkaProducer;
-    private final NotificationClient notificationClient;
 
     public AuthenticationService(UsersRepository usersRepository, RoleRepository roleRepository,
                                  PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
                                  JwtService jwtService, RefreshTokenService refreshTokenService,
                                  LoginAttemptService loginAttemptService, EmailVerificationService emailVerificationService,
-                                 CommonKafkaProducer commonKafkaProducer, NotificationClient notificationClient) {
+                                 CommonKafkaProducer commonKafkaProducer) {
         this.usersRepository = usersRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -58,96 +64,97 @@ public class AuthenticationService {
         this.loginAttemptService = loginAttemptService;
         this.emailVerificationService = emailVerificationService;
         this.commonKafkaProducer = commonKafkaProducer;
-        this.notificationClient = notificationClient;
     }
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
-        // 1. Validate role FIRST (before any DB or expensive operations)
-        if (request.role() == null || !UserRole.ROLE_PATIENT.name().equals(request.role())) {
-            throw new InvalidRoleException("Only ROLE_PATIENT is allowed during self-registration");
+        try {
+
+            // 1. Validate role FIRST (before any DB or expensive operations)
+            if (request.role() == null || !UserRole.ROLE_PATIENT.name().equals(request.role())) {
+                throw new InvalidRoleException("Only ROLE_PATIENT is allowed during self-registration");
+            }
+
+            // 2. Basic defensive checks (even if @Valid exists on controller)
+            if (request.username() == null || request.username().isBlank()) {
+                throw new IllegalArgumentException("Username is required");
+            }
+            if (request.email() == null || request.email().isBlank()) {
+                throw new IllegalArgumentException("Email is required");
+            }
+            if (request.password() == null || request.password().isBlank()) {
+                throw new IllegalArgumentException("Password is required");
+            }
+
+            // 3. Uniqueness checks
+            if (usersRepository.existsByUsername(request.username())) {
+                throw new UsernameAlreadyExistsException("Username is already taken");
+            }
+            if (usersRepository.existsByEmail(request.email())) {
+                throw new EmailAlreadyExistsException("Email is already registered");
+            }
+
+            // 4. Load role
+            Role patientRole = roleRepository.findByRole(UserRole.ROLE_PATIENT)
+                    .orElseThrow(() -> new RoleNotFoundException("Default role ROLE_PATIENT not found"));
+
+            String encryptedPassword = passwordEncoder.encode(request.password());
+
+            // 5. Create and save user
+            Users user = Users.builder()
+                    .username(request.username())
+                    .password(encryptedPassword)
+                    .email(request.email())
+                    .isEnabled(false)
+                    .accountLocked(false)
+                    .failedLoginAttempts(0)
+                    .createdAt(Instant.now())
+                    .build();
+            user.addRole(patientRole);
+            Users savedUser = usersRepository.save(user);
+
+            // 6. Create email verification token
+            EmailVerificationToken emailVerificationToken = emailVerificationService.createToken(savedUser);
+
+            // 7. Publish UserRegistered event
+            commonKafkaProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .username(user.getUsername())
+                    .verificationLink(verificationLink(emailVerificationToken.getToken()))
+                    .action(ActionType.REGISTER.name())
+                    .status(Status.SUCCESSFUL.name())
+                    .detail("User registered successfully")
+                    .entityName(EntityName.USER)
+                    .eventType(EventType.USER_REGISTERED)
+                    .build());
+
+            // 8. Publish email notification event
+            commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
+                    .correlationId(UUID.randomUUID().toString())
+                    .type(NotificationType.EMAIL_VERIFICATION)
+                    .recipient(savedUser.getEmail())
+                    .sender(NotificationSource.AUTH)
+                    .subject("Verify your email.")
+                    .variables(Map.of("username", savedUser.getUsername(),
+                            "verificationLink", verificationLink(emailVerificationToken.getToken())))
+                    .eventType(EventType.NOTIFICATION_EVENTS)
+                    .userId(savedUser.getId())
+                    .build());
+
+            return RegisterResponse.builder()
+                    .username(savedUser.getUsername())
+                    .email(savedUser.getEmail())
+                    .createdAt(savedUser.getCreatedAt())
+                    .message("Registration successful. Please check your email to verify your account.")
+                    .emailVerificationRequired(true)
+                    .build();
+        } catch (Exception e) {
+            return RegisterResponse.builder()
+                    .message("Something went wrong. Failed to register.")
+                    .build();
         }
-
-        // 2. Basic defensive checks (even if @Valid exists on controller)
-        if (request.username() == null || request.username().isBlank()) {
-            throw new IllegalArgumentException("Username is required");
-        }
-        if (request.email() == null || request.email().isBlank()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (request.password() == null || request.password().isBlank()) {
-            throw new IllegalArgumentException("Password is required");
-        }
-
-        // 3. Uniqueness checks
-        if (usersRepository.existsByUsername(request.username())) {
-            throw new UsernameAlreadyExistsException("Username is already taken");
-        }
-        if (usersRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException("Email is already registered");
-        }
-
-        // 4. Load role
-        Role patientRole = roleRepository.findByRole(UserRole.ROLE_PATIENT)
-                .orElseThrow(() -> new RoleNotFoundException("Default role ROLE_PATIENT not found"));
-
-        String encryptedPassword = passwordEncoder.encode(request.password());
-
-        // 5. Create and save user
-        Users user = Users.builder()
-                .username(request.username())
-                .password(encryptedPassword)
-                .email(request.email())
-                .isEnabled(false)
-                .accountLocked(false)
-                .failedLoginAttempts(0)
-                .createdAt(Instant.now())
-                .build();
-        user.addRole(patientRole);
-        Users savedUser = usersRepository.save(user);
-
-        // 6. Create email verification token
-        EmailVerificationToken emailVerificationToken = emailVerificationService.createToken(savedUser);
-
-        // 7. Publish UserRegistered event
-        commonKafkaProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .username(user.getUsername())
-                .verificationLink(verificationLink(String.valueOf(emailVerificationToken)))
-                .action(ActionType.REGISTER.name())
-                .status(Status.SUCCESSFUL.name())
-                .detail("User registered successfully")
-                .entityName(EntityName.USER.name())
-                .build());
-
-        // 8. Publish notification event
-        commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
-                .correlationId(UUID.randomUUID().toString())
-                .type(com.healthcare.common_kafka.enums.NotificationType.valueOf(NotificationType.EMAIL_VERIFICATION.name()))
-                .recipient(savedUser.getEmail())
-                .sender(com.healthcare.common_kafka.enums.NotificationSource.valueOf(NotificationSource.AUTH.name()))
-                .subject("Verify your email.")
-                .variables(Map.of("username", user.getUsername(),
-                        "verificationLink", verificationLink(String.valueOf(emailVerificationToken))))
-                .build());
-
-        // 9. Calls sendVerificationEmail method in healthcare_notification to send email
-        notificationClient.sendVerificationEmail(VerificationEmailRequest.builder()
-                .userId(savedUser.getId())
-                .email(savedUser.getEmail())
-                .username(savedUser.getUsername())
-                .verificationLink(verificationLink(String.valueOf(emailVerificationToken)))
-                .build());
-
-        return RegisterResponse.builder()
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .createdAt(savedUser.getCreatedAt())
-                .message("Registration successful. Please check your email to verify your account.")
-                .emailVerificationRequired(true)
-                .build();
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -177,12 +184,13 @@ public class AuthenticationService {
             commonKafkaProducer.publishUserLoginEvent(CoreEvent.builder()
                     .userId(user.getId())
                     .username(user.getUsername())
+                    .email(user.getEmail())
                     .action(ActionType.LOGIN.name())
-                    .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
+                    .entityName(EntityName.USER)
                     .status(Status.SUCCESSFUL.name())
                     .details("User logged in successfully")
+                    .eventType(EventType.USER_LOGIN)
                     .build());
-            ;
 
             return LoginResponse.builder()
                     .accessToken(accessToken)
@@ -197,10 +205,12 @@ public class AuthenticationService {
                     .userId(request.userId())
                     .username(request.username())
                     .action(ActionType.LOGIN.name())
-                    .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
+                    .entityName(EntityName.USER)
                     .status(Status.FAILED.name())
                     .details("Invalid username or password")
+                    .eventType(EventType.USER_LOGIN)
                     .build());
+
             throw new BadCredentialsException("Invalid username or password");
         } catch (DisabledException ex) {
             throw new DisabledException("Account is disabled. Please verify your email");
@@ -216,11 +226,13 @@ public class AuthenticationService {
         String accessToken = jwtService.generateToken(user);
         commonKafkaProducer.publishRefreshTokenEvent(CoreEvent.builder()
                 .userId(user.getId())
+                .email(user.getEmail())
                 .username(user.getUsername())
                 .action(ActionType.REFRESH_TOKEN.name())
-                .entityName(com.healthcare.common_kafka.enums.EntityName.valueOf(EntityName.USER.name()))
-                .status(Status.INVALID_REFRESH_TOKEN.name())
-                .details("Refresh token is invalid.")
+                .entityName(EntityName.USER)
+                .status(Status.SUCCESSFUL.name())
+                .details("Access token regenerated successfully")
+                .eventType(EventType.REFRESH_TOKEN)
                 .build());
 
         return LoginResponse.builder()
@@ -239,29 +251,100 @@ public class AuthenticationService {
         commonKafkaProducer.publishUserLogoutEvent(CoreEvent.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
+                .email(user.getEmail())
                 .action(ActionType.LOGOUT.name())
                 .status(Status.SUCCESSFUL.name())
                 .details("User logged out successfully.")
+                .eventType(EventType.USER_LOGOUT)
+                .entityName(EntityName.USER)
                 .build());
     }
 
     public TokenIntrospectionResponse introspect(TokenIntrospectionRequest request) {
 
         String token = request.accessToken();
-        String username = jwtService.extractUsername(token);
-        Users user = usersRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-        if (!jwtService.isTokenValid(token, user)) {
-            return TokenIntrospectionResponse.builder().valid(false).build();
+        try {
+            String username = jwtService.extractUsername(token);
+            Users user = usersRepository.findByUsername(username)
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+            if (!jwtService.isTokenValid(token, user)) {
+                commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .username(username)
+                        .action(ActionType.INTROSPECT.name())
+                        .entityName(EntityName.ROLE)
+                        .status(Status.FAILED.name())
+                        .details("Introspection result: INVALID; username: " + username)
+                        .eventType(EventType.INTROSPECT)
+                        .build());
+
+                return TokenIntrospectionResponse.builder()
+                        .valid(false)
+                        .build();
+            }
+
+            Set<String> authorities = user.getRoles()
+                    .stream()
+                    .map(role -> role.getRole().name())
+                    .collect(Collectors.toSet());
+
+            commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .username(username)
+                    .action(ActionType.INTROSPECT.name())
+                    .entityName(EntityName.ROLE)
+                    .status(Status.SUCCESSFUL.name())
+                    .details("Introspection result: VALID; username: " + username)
+                    .eventType(EventType.INTROSPECT)
+                    .build());
+
+            return TokenIntrospectionResponse.builder()
+                    .valid(true)
+                    .userId(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .authorities(authorities)
+                    .expiresAt(jwtService.extractExpiration(token).toInstant())
+                    .build();
+
+        } catch (ExpiredJwtException e) {
+
+            Claims claims = jwtService.extractClaimsIgnoringExpiration(token);
+            String username = claims.getSubject();
+            Users user = usersRepository.findByUsername(username)
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+            Set<String> authorities = user.getRoles()
+                    .stream()
+                    .map(role -> role.getRole().name())
+                    .collect(Collectors.toSet());
+
+            Instant expiration = e.getClaims()
+                    .getExpiration()
+                    .toInstant();
+
+            commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
+                    .userId(user.getId())
+                    .username(username)
+                    .email(user.getEmail())
+                    .action(ActionType.INTROSPECT.name())
+                    .entityName(EntityName.ROLE)
+                    .status(Status.FAILED.name())
+                    .details("Introspection result: EXPIRED; expired at: " + expiration)
+                    .eventType(EventType.INTROSPECT)
+                    .build());
+
+            return TokenIntrospectionResponse.builder()
+                    .valid(false)
+                    .userId(user.getId())
+                    .username(username)
+                    .email(user.getEmail())
+                    .authorities(authorities)
+                    .expiresAt(expiration)
+                    .build();
         }
-        return TokenIntrospectionResponse.builder()
-                .valid(true)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .authorities(Collections.singleton(user.getRoles().toString()))
-                .expiresAt(jwtService.extractExpiration(token).toInstant())
-                .build();
     }
 
     private String verificationLink(String verificationToken) {

@@ -1,7 +1,7 @@
 package com.healthcare.healthcare_audit.service;
 
 import com.healthcare.common_kafka.event.CoreEvent;
-import com.healthcare.common_kafka.event.EmailSentEvent;
+import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.common_kafka.event.UserRegisteredEvent;
 import com.healthcare.healthcare_audit.dto.AuditRequest;
 import com.healthcare.healthcare_audit.dto.AuditResponse;
@@ -82,6 +82,7 @@ public class AuditServiceImpl implements AuditService {
         return AuditResponse.builder()
                 .userId(auditLogInfo.getUserId())
                 .username(auditLogInfo.getUsername())
+                .email(auditLogInfo.getEmail())
                 .action(auditLogInfo.getAction())
                 .entityName(auditLogInfo.getEntityName())
                 .entityId(auditLogInfo.getEntityId())
@@ -100,28 +101,11 @@ public class AuditServiceImpl implements AuditService {
                 .email(event.email())
                 .verificationLink(event.verificationLink())
                 .action(AuditAction.valueOf(event.action()))
-                .entityName(event.entityName())
+                .entityName(event.entityName().name())
                 .timestamp(Instant.now())
                 .status(AuditStatus.valueOf(event.status()))
-                .eventType(event.eventType())
+                .eventType(event.eventType().name())
                 .details(event.detail())
-                .build();
-        auditRepository.save(auditLog);
-    }
-
-    @Override
-    public void createEmailSentEvent(EmailSentEvent event) {
-
-        AuditLog auditLog = AuditLog.builder()
-                .userId(event.userId())
-                .username(event.username())
-                .email(event.email())
-                .action(AuditAction.valueOf(event.action()))
-                .entityName(event.entityName())
-                .timestamp(Instant.now())
-                .status(AuditStatus.valueOf(event.status()))
-                .eventType(event.eventType())
-                .details(event.details())
                 .build();
         auditRepository.save(auditLog);
     }
@@ -131,6 +115,7 @@ public class AuditServiceImpl implements AuditService {
         AuditLog auditLog = AuditLog.builder()
                 .userId(event.userId())
                 .username(event.username())
+                .email(event.email())
                 .action(AuditAction.valueOf(event.action()))
                 .entityName(String.valueOf(event.entityName()))
                 .timestamp(Instant.now())

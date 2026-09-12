@@ -9,5 +9,6 @@ public final class ApiSummary {
     public static final String INTROSPECT = "Introspect";
     public static final String EMAIL_VERIFICATION = "Verify email";
     public static final String FORGET_PASSWORD = "Forget password";
-    public static final String REST_PASSWORD = "Reset password";
+    public static final String RESET_PASSWORD = "Reset password";
+    public static final String SET_NEW_PASSWORD = "Set a new password";
 }

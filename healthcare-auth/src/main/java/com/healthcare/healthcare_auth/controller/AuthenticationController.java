@@ -4,7 +4,7 @@ import com.healthcare.healthcare_auth.dto.*;
 import com.healthcare.healthcare_auth.emailVerification.EmailVerificationService;
 import com.healthcare.healthcare_auth.exception.ApiErrorResponse;
 import com.healthcare.healthcare_auth.forgetPassword.ForgetPasswordService;
-import com.healthcare.healthcare_auth.forgetPassword.ForgotPasswordRequest;
+import com.healthcare.healthcare_auth.forgetPassword.ForgetPasswordRequest;
 import com.healthcare.healthcare_auth.forgetPassword.ResetPasswordRequest;
 import com.healthcare.healthcare_auth.service.AuthenticationService;
 import com.healthcare.healthcare_auth.util.openApiDoc.ApiDescription;
@@ -53,8 +53,8 @@ public class AuthenticationController {
 
 
     @Operation(summary = ApiSummary.LOGIN, description = ApiDescription.LOGIN)
-    @ApiResponses(@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.LOGIN_SUCCESS))
-//            @ApiResponse(responseCode = ApiResponseCode.CODE_401, description = ApiDescription.INVALID_CREDENTIAL)})
+    @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.LOGIN_SUCCESS),
+            @ApiResponse(responseCode = ApiResponseCode.CODE_401, description = ApiDescription.INVALID_CREDENTIAL)})
     @PostMapping("/login") //Used during login
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
@@ -93,17 +93,24 @@ public class AuthenticationController {
         return ResponseEntity.ok("Email verified successfully");
     }
 
-    @PostMapping("/forgotPassword")
+    @PostMapping("/forgetPassword")
     @Operation(summary = ApiSummary.FORGET_PASSWORD, description = ApiDescription.FORGET_PASSWORD)
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        forgetPasswordService.forgotPassword(request.email());
+    public ResponseEntity<Void> forgetPassword(@Valid @RequestBody ForgetPasswordRequest request) {
+        forgetPasswordService.forgetPassword(request.email());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/resetPassword")
-    @Operation(summary = ApiSummary.REST_PASSWORD, description = ApiDescription.RESET_PASSWORD)
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        forgetPasswordService.resetPassword(request);
+    @Operation(summary = ApiSummary.RESET_PASSWORD, description = ApiDescription.RESET_PASSWORD)
+    public ResponseEntity<String> resetPassword(@RequestParam String token) {
+        String resetLink = forgetPasswordService.resetPassword(token);
+        return ResponseEntity.ok(resetLink);
+    }
+
+    @PostMapping("/setNewPassword")
+    @Operation(summary = ApiSummary.SET_NEW_PASSWORD, description = ApiDescription.SET_NEW_PASSWORD)
+    public ResponseEntity<Void> setNewPassword(@RequestParam String token, @Valid @RequestBody ResetPasswordRequest request) {
+        forgetPasswordService.setNewPassword(token, request);
         return ResponseEntity.noContent().build();
     }
 

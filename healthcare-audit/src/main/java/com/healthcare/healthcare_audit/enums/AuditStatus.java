@@ -7,7 +7,9 @@ public enum AuditStatus {
     EMAIL_FAILED,
     REFRESH_TOKEN,
     VERIFY_EMAIL,
-    LOCK_ACCOUNT
+    LOCK_ACCOUNT,
+    EMAIL_VERIFIED,
+    PASSWORD_RESET
 }
 
 

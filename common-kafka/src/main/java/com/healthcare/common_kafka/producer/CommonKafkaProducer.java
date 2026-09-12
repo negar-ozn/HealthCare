@@ -1,9 +1,6 @@
 package com.healthcare.common_kafka.producer;
 
-import com.healthcare.common_kafka.event.CoreEvent;
-import com.healthcare.common_kafka.event.EmailSentEvent;
-import com.healthcare.common_kafka.event.NotificationEvent;
-import com.healthcare.common_kafka.event.UserRegisteredEvent;
+import com.healthcare.common_kafka.event.*;
 import com.healthcare.common_kafka.topic.KafkaTopics;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -13,18 +10,15 @@ import org.springframework.stereotype.Component;
 public class CommonKafkaProducer {
 
     private final KafkaTemplate<String, CoreEvent> coreEventKafkaTemplate;
-    private final KafkaTemplate<String, EmailSentEvent> emailSentEventKafkaTemplate;
     private final KafkaTemplate<String, NotificationEvent> notificationEventKafkaTemplate;
     private final KafkaTemplate<String, UserRegisteredEvent> userRegisteredEventKafkaTemplate;
 
 
     public CommonKafkaProducer(KafkaTemplate<String, CoreEvent> coreEventKafkaTemplate,
-                               KafkaTemplate<String, EmailSentEvent> emailSentEventKafkaTemplate,
                                KafkaTemplate<String, NotificationEvent> notificationEventKafkaTemplate,
                                KafkaTemplate<String, UserRegisteredEvent> userRegisteredEventKafkaTemplate) {
 
         this.coreEventKafkaTemplate = coreEventKafkaTemplate;
-        this.emailSentEventKafkaTemplate = emailSentEventKafkaTemplate;
         this.notificationEventKafkaTemplate = notificationEventKafkaTemplate;
         this.userRegisteredEventKafkaTemplate = userRegisteredEventKafkaTemplate;
     }
@@ -149,20 +143,47 @@ public class CommonKafkaProducer {
         coreEventKafkaTemplate.send(KafkaTopics.SCHEDULE_UPDATED, event);
     }
 
-    public void publishEmailSentEvent(EmailSentEvent event) {
-        emailSentEventKafkaTemplate.send(KafkaTopics.EMAIL_SENT, event);
-    }
-
+    // sends email verification
     public void publishNotificationEvent(NotificationEvent event) {
         notificationEventKafkaTemplate.send(KafkaTopics.NOTIFICATION_EVENTS, event.correlationId(), event);
     }
 
-    public void publishPasswordResetEvent(CoreEvent event) {
-        coreEventKafkaTemplate.send(KafkaTopics.PASSWORD_RESET, event);
+    // email sent event
+    public void publishEmailSentEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.EMAIL_SENT, event);
+    }
+
+    // email verified event
+    public void publishEmailVerifiedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.EMAIL_VERIFIED, event);
+    }
+
+    // sends welcome email
+    public void publishWelcomeEvent(NotificationEvent event) {
+        notificationEventKafkaTemplate.send(KafkaTopics.WELCOME_EMAIL, event);
+    }
+
+    // sends email forget password
+    public void publishPasswordResetEmailEvent(NotificationEvent event) {
+        notificationEventKafkaTemplate.send(KafkaTopics.PASSWORD_RESET, event);
+    }
+
+    // email forget password sent event
+    public void publishForgetPasswordEmailSentEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.FORGET_PASSWORD_EMAIL, event);
+    }
+
+    // new password submitted event
+    public void publishNewPasswordSubmittedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.NEW_PASSWORD, event);
     }
 
     public void publishRefreshTokenEvent(CoreEvent event) {
         coreEventKafkaTemplate.send(KafkaTopics.REFRESH_TOKEN, event);
+    }
+
+    public void publishIntrospectEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.INTROSPECT, event);
     }
 
     public void publishUserLoginEvent(CoreEvent event) {
