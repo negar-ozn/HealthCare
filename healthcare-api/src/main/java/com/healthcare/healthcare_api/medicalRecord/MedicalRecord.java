@@ -22,26 +22,36 @@ public class MedicalRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private LocalDate visitDate;
+
     @Column(nullable = false)
     private String symptoms;
+
     @Column(nullable = false)
     private String notes;
+
     @Column(nullable = false)
     private String prescriptions;
+
     @Column(nullable = false, unique = true)
     private String prescriptionsNumber;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
     private Patient patient;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doctor_id")
     private Doctor doctor;
 }

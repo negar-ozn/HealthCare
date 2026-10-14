@@ -22,17 +22,23 @@ public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false, unique = true)
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
     @Column(length = 200)
     private String description;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permissions",

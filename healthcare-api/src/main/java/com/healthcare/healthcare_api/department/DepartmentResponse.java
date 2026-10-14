@@ -8,8 +8,7 @@ import java.time.Instant;
 public record DepartmentResponse(
 
         String name,
-        String description,
-        Instant createdAt,
-        Instant updatedAt
+        String message
+
 ) {
 }

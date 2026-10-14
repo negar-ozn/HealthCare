@@ -23,19 +23,26 @@ public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private BigDecimal amount;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Method method;
+
     @Column(nullable = false)
     private LocalDate paymentDate;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;

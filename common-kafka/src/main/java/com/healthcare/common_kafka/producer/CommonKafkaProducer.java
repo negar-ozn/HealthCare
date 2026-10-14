@@ -27,6 +27,10 @@ public class CommonKafkaProducer {
         coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_BOOKED, event);
     }
 
+    public void publishAppointmentRescheduledEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_RESCHEDULED, event);
+    }
+
     public void publishAppointmentCanceledEvent(CoreEvent event) {
         coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_CANCELED, event);
     }
@@ -43,6 +47,26 @@ public class CommonKafkaProducer {
         coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_UPDATED, event);
     }
 
+    public void publishAppointmentDeletedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_DELETED, event);
+    }
+
+    public void publishAppointmentConfirmedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_CONFIRMED, event);
+    }
+
+    public void publishAppointmentCheckInEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_CHECKED_IN, event);
+    }
+
+    public void publishAppointmentNoShowEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_NO_SHOWED, event);
+    }
+
+    public void publishAppointmentInProgressEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.APPOINTMENT_IN_PROGRESS, event);
+    }
+
     public void publishDepartmentCreatedEvent(CoreEvent event) {
         coreEventKafkaTemplate.send(KafkaTopics.DEPARTMENT_CREATED, event);
     }
@@ -53,6 +77,10 @@ public class CommonKafkaProducer {
 
     public void publishDepartmentUpdatedEvent(CoreEvent event) {
         coreEventKafkaTemplate.send(KafkaTopics.DEPARTMENT_UPDATED, event);
+    }
+
+    public void publishDepartmentDeletedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.DEPARTMENT_DELETED, event);
     }
 
     public void publishDoctorCreatedEvent(CoreEvent event) {
@@ -85,6 +113,10 @@ public class CommonKafkaProducer {
 
     public void publishMedicalRecordUpdatedEvent(CoreEvent event) {
         coreEventKafkaTemplate.send(KafkaTopics.MEDICAL_RECORD_UPDATED, event);
+    }
+
+    public void publishMedicalRecordDeletedEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.MEDICAL_RECORD_DELETED, event);
     }
 
     public void publishPatientCreatedEvent(CoreEvent event) {
@@ -127,6 +159,10 @@ public class CommonKafkaProducer {
         coreEventKafkaTemplate.send(KafkaTopics.PERSONNEL_READ, event);
     }
 
+    public void publishProfileReadSelfEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.PROFILE_READ_SELF, event);
+    }
+
     public void publishScheduleCreatedEvent(CoreEvent event){
         coreEventKafkaTemplate.send(KafkaTopics.SCHEDULE_CREATED, event);
     }
@@ -166,6 +202,10 @@ public class CommonKafkaProducer {
     // sends email forget password
     public void publishPasswordResetEmailEvent(NotificationEvent event) {
         notificationEventKafkaTemplate.send(KafkaTopics.PASSWORD_RESET, event);
+    }
+
+    public void publishPersonnelPasswordSetupNotificationEvent(NotificationEvent event) {
+        notificationEventKafkaTemplate.send(KafkaTopics.PERSONNEL_PASSWORD_SETUP, event);
     }
 
     // email forget password sent event

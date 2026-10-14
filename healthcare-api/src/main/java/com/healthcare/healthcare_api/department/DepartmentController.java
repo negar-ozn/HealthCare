@@ -28,47 +28,43 @@ public class DepartmentController {
     @Operation(summary = ApiSummary.NEW_DEPARTMENT, description = ApiDescription.NEW_DEPARTMENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DEPARTMENT_CREATION_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.DEPARTMENT_ALREADY_EXIST)})
-    @PreAuthorize("hasAuthority('ADMIN_CREATE')")
+    @PreAuthorize("hasAuthority('DEPARTMENT_CREATE')")
     @PostMapping("/newDepartment")
-    public ResponseEntity<Department> addDepartment(@Valid @RequestBody DepartmentRequest departmentRequest) {
-        Department department = departmentService.addDepartment(departmentRequest);
-        return ResponseEntity.ok(department);
+    public ResponseEntity<DepartmentResponse> addDepartment(@Valid @RequestBody CreateDepartmentRequest createDepartmentRequest) {
+        return ResponseEntity.ok(departmentService.addDepartment(createDepartmentRequest));
     }
 
     @Operation(summary = ApiSummary.EDIT_DEPARTMENT, description = ApiDescription.EDIT_DEPARTMENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DEPARTMENT_MODIFICATION_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.DEPARTMENT_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('ADMIN_UPDATE')")
+    @PreAuthorize("hasAuthority('DEPARTMENT_UPDATE')")
     @PutMapping("/editDepartment/{id}")
-    public ResponseEntity<Department> editDepartment(@PathVariable Long id, @Valid @RequestBody DepartmentRequest departmentRequest) {
-        Department department = departmentService.editDepartment(id, departmentRequest);
-        return ResponseEntity.ok(department);
+    public ResponseEntity<DepartmentResponse> editDepartment(@PathVariable Long id, @Valid @RequestBody UpdateDepartmentRequest updateDepartmentRequest) {
+        return ResponseEntity.ok(departmentService.editDepartment(id, updateDepartmentRequest));
     }
 
     @Operation(summary = ApiSummary.FIND_DEPARTMENT, description = ApiDescription.FIND_DEPARTMENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DEPARTMENT_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.DEPARTMENT_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('ADMIN_READ')")
+    @PreAuthorize("hasAuthority('DEPARTMENT_READ')")
     @GetMapping("/getDepartment/{id}")
     public ResponseEntity<DepartmentResponse> getDepartment(@PathVariable Long id) {
-        DepartmentResponse department = departmentService.getDepartment(id);
-        return ResponseEntity.ok(department);
+        return ResponseEntity.ok(departmentService.getDepartment(id));
     }
 
     @Operation(summary = ApiSummary.ALL_DEPARTMENTS, description = ApiDescription.ALL_DEPARTMENTS)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DEPARTMENTS_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.DEPARTMENTS_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('ADMIN_READ')")
+    @PreAuthorize("hasAuthority('DEPARTMENT_READ')")
     @GetMapping("/allDepartments")
-    public ResponseEntity<List<DepartmentResponse>> allDepartments(@RequestParam(required = false) String name) {
-        List<DepartmentResponse> department = departmentService.allDepartments(name);
-        return ResponseEntity.ok(department);
+    public ResponseEntity<List<DepartmentResponse>> allDepartments() {
+        return ResponseEntity.ok(departmentService.allDepartments());
     }
 
     @Operation(summary = ApiSummary.DELETE_DEPARTMENT, description = ApiDescription.DELETE_DEPARTMENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DELETE_DEPARTMENT_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.DEPARTMENT_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('ADMIN_DELETE')")
+    @PreAuthorize("hasAuthority('DEPARTMENT_DELETE')")
     @DeleteMapping("/deleteDepartment/{id}")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         departmentService.deleteDepartment(id);

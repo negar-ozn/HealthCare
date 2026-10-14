@@ -30,9 +30,8 @@ public class PatientController {
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.PATIENT_ALREADY_EXIST)})
     @PreAuthorize("hasAuthority('PATIENT_CREATE')")
     @PostMapping("/patients/newPatient")
-    public ResponseEntity<Patient> addPatient(@Valid @RequestBody PatientRequest patientRequest) {
-        Patient patient = patientService.addPatient(patientRequest);
-        return ResponseEntity.ok(patient);
+    public ResponseEntity<PatientResponse> addPatient(@Valid @RequestBody PatientRequest patientRequest) {
+        return ResponseEntity.ok(patientService.addPatient(patientRequest));
     }
 
     @Operation(summary = ApiSummary.EDIT_PATIENT, description = ApiDescription.EDIT_PATIENT)
@@ -40,37 +39,34 @@ public class PatientController {
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.PATIENT_NOT_FOUND)})
     @PreAuthorize("hasAuthority('PATIENT_UPDATE')")
     @PutMapping("/patients/editPatient/{id}")
-    public ResponseEntity<Patient> editPatient(@PathVariable Long id, @Valid @RequestBody PatientRequest patientRequest) {
-        Patient patient = patientService.editPatient(id, patientRequest);
-        return ResponseEntity.ok(patient);
+    public ResponseEntity<PatientResponse> editPatient(@PathVariable Long id, @Valid @RequestBody PatientRequest patientRequest) {
+        return ResponseEntity.ok(patientService.editPatient(id, patientRequest));
     }
 
     @Operation(summary = ApiSummary.FIND_PATIENT, description = ApiDescription.FIND_PATIENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.PATIENT_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.PATIENT_NOT_FOUND)})
-    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ', 'ADMIN_READ')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ')")
     @GetMapping("/patients/getPatient/{id}")
     public ResponseEntity<PatientResponse> getPatient(@PathVariable Long id) {
-        PatientResponse patientRequest = patientService.getPatient(id);
-        return ResponseEntity.ok(patientRequest);
+        return ResponseEntity.ok(patientService.getPatient(id));
     }
 
     @Operation(summary = ApiSummary.ALL_PATIENTS, description = ApiDescription.ALL_PATIENTS)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.PATIENTS_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.PATIENTS_NOT_FOUND)})
-    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ', 'ADMIN_READ')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ')")
     @GetMapping("/patients/allPatients")
     public ResponseEntity<List<PatientResponse>> allPatient(@RequestParam(required = false) String firstName,
                                                             @RequestParam(required = false) String lastName,
                                                             @RequestParam(required = false) Long nationalId) {
-        List<PatientResponse> patientList = patientService.allPatient(firstName, lastName, nationalId);
-        return ResponseEntity.ok(patientList);
+        return ResponseEntity.ok(patientService.allPatient(firstName, lastName, nationalId));
     }
 
     @Operation(summary = ApiSummary.DELETE_PATIENT, description = ApiDescription.DELETE_PATIENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.DELETE_PATIENT_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.PATIENT_NOT_FOUND)})
-    @PreAuthorize("hasAnyAuthority('PATIENT_DELETE', 'ADMIN_DELETE')")
+    @PreAuthorize("hasAuthority('PATIENT_DELETE')")
     @DeleteMapping("/patients/deletePatient/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
         patientService.deletePatient(id);
@@ -80,19 +76,18 @@ public class PatientController {
     @Operation(summary = ApiSummary.PATIENT_HISTORY, description = ApiDescription.PATIENT_HISTORY)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.HISTORY_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.HISTORY_NOT_FOUND)})
-    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ', 'ADMIN_READ')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR_READ', 'RECEPTIONIST_READ')")
     @GetMapping("/patients/history")
     public ResponseEntity<List<PatientResponse>> patientHistory(@RequestParam(required = false) Long nationalId,
                                                                 @RequestParam(required = false) Long id) {
-        List<PatientResponse> patientRequestList = patientService.patientHistory(id, nationalId);
-        return ResponseEntity.ok(patientRequestList);
+        return ResponseEntity.ok(patientService.patientHistory(id, nationalId));
     }
 
     @Operation(summary = ApiSummary.INACTIVE_PATIENT, description = ApiDescription.INACTIVE_PATIENT)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.INACTIVE_PATIENT_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.PATIENT_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('ADMIN_CREATE')")
-    @PostMapping("/patient/inactivePatient/{id}")
+    @PreAuthorize("hasAuthority('PATIENT_UPDATE')")
+    @PutMapping("/patient/inactivePatient/{id}")
     public ResponseEntity<Void> inactivePatient(@PathVariable Long id) {
         patientService.inactivate(id);
         return ResponseEntity.noContent().build();

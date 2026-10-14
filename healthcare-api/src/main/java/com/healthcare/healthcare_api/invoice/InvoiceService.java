@@ -1,9 +1,7 @@
 package com.healthcare.healthcare_api.invoice;
 
-import com.healthcare.healthcare_api.appointment.Appointment;
-import com.healthcare.healthcare_api.patient.Patient;
 import com.healthcare.healthcare_api.shared.enums.Status;
-import com.healthcare.healthcare_api.shared.exception.NoSuchInvoiceFoundException;
+import com.healthcare.healthcare_api.shared.exception.InvoiceNotFoundException;
 import com.healthcare.healthcare_api.shared.util.IdentifierGeneratorService;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +22,7 @@ public class InvoiceService {
     public Invoice addInvoice(InvoiceDto invoiceDto) {
 
         invoiceRepository.findById(invoiceDto.getId())
-                .orElseThrow(() -> new NoSuchInvoiceFoundException("No such invoice found."));
+                .orElseThrow(() -> new InvoiceNotFoundException("No such invoice found."));
         Invoice invoice = Invoice.builder()
                 .amount(invoiceDto.getAmount())
                 .tax(invoiceDto.getTax())
@@ -43,7 +41,7 @@ public class InvoiceService {
     public Invoice editInvoice(Long id, InvoiceDto invoiceDto) {
 
         Invoice invoiceOp = invoiceRepository.findById(id)
-                .orElseThrow(() -> new NoSuchInvoiceFoundException("No such invoice found."));
+                .orElseThrow(() -> new InvoiceNotFoundException("No such invoice found."));
 
         Invoice invoice = Invoice.builder()
                 .id(invoiceOp.getId())
@@ -64,7 +62,7 @@ public class InvoiceService {
     public InvoiceDto getInvoice(Long id) {
 
         Invoice invoiceOp = invoiceRepository.findById(id)
-                .orElseThrow(() -> new NoSuchInvoiceFoundException("No such invoice found."));
+                .orElseThrow(() -> new InvoiceNotFoundException("No such invoice found."));
         return InvoiceDto.builder()
                 .id(invoiceOp.getId())
                 .patient(invoiceOp.getPatient())
@@ -103,7 +101,7 @@ public class InvoiceService {
     public void deleteInvoice(Long id) {
 
         Invoice invoiceOp = invoiceRepository.findById(id)
-                .orElseThrow(() -> new NoSuchInvoiceFoundException("No such invoice found."));
+                .orElseThrow(() -> new InvoiceNotFoundException("No such invoice found."));
         invoiceRepository.deleteById(invoiceOp.getId());
     }
 }

@@ -22,24 +22,30 @@ public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private String specialization;
+
     @Column(nullable = false, unique = true)
     private Long licenceNumber;
-    @Column(nullable = false)
-    private Boolean availabilitySchedule;
+
     @Enumerated(EnumType.STRING)
     private Status status;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
-    @OneToOne
+
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "personnel_id")
     private Personnel personnel;
 }

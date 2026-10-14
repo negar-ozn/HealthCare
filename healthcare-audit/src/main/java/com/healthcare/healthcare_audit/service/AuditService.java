@@ -1,7 +1,6 @@
 package com.healthcare.healthcare_audit.service;
 
 import com.healthcare.common_kafka.event.CoreEvent;
-import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.common_kafka.event.UserRegisteredEvent;
 import com.healthcare.healthcare_audit.dto.AuditRequest;
 import com.healthcare.healthcare_audit.dto.AuditResponse;

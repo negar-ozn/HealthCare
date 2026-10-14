@@ -8,8 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = ApiDescription.INTROSPECT_REQUEST)
 public record TokenIntrospectionRequest(
 
-        @NotBlank
-        String accessToken
+        @NotBlank String accessToken
 ) {}
 
 

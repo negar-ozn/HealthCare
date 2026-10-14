@@ -21,25 +21,36 @@ public class Users{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable=false, unique = true, length = 50)
     private String username;
+
     @Column(nullable=false)
     private String password;
+
     @Column(nullable=false, unique = true, length = 100)
     private String email;
-    @Column(nullable=false)
-    private boolean isEnabled = true;
+
+    @Column(nullable = false)
+    private boolean isEnabled = false;
+
     @Column(nullable = false)
     private boolean accountLocked = false;
+
     @Column(nullable = false)
     private Integer failedLoginAttempts = 0;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     private Instant lockTime;
+
     @Version
     private Long version;
+
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -48,6 +59,7 @@ public class Users{
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
     @Builder.Default
     @OneToMany(
             mappedBy = "user",

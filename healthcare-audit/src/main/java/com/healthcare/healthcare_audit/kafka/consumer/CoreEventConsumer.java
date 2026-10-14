@@ -18,15 +18,16 @@ public class CoreEventConsumer {
             "patient-created", "patient-updated", "patient-deleted", "patient-read",
             "doctor-created", "doctor-updated", "doctor-deleted", "doctor-read",
             "appointment-booked", "appointment-updated", "appointment-canceled", "appointment-completed",
-            "appointment-read",
-            "department-created", "department-updated", "department-read",
+            "appointment-read", "appointment-rescheduled", "appointment-deleted", "appointment-confirmed",
+            "appointment-checked-in", "appointment-no-showed", "appointment-in-progress",
+            "department-created", "department-updated", "department-read", "department-deleted",
             "medical-record-created", "medical-record-updated", "medical-record-completed",
-            "medical-record-read",
+            "medical-record-read", "medical-record-deleted",
             "payment-created", "payment-read",
             "personnel-created", "personnel-updated", "personnel-deleted", "personnel-read",
             "schedule-created", "schedule-updated", "schedule-deleted", "schedule-read",
             "user-login", "user-logout", "refresh-token", "introspect", "email-verified", "email-sent",
-            "new-password", "forget-password-email"
+            "new-password", "forget-password-email", "profile-read-self"
     },
             containerFactory = "coreKafkaListenerContainerFactory")
     public void consume(CoreEvent event) {

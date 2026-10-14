@@ -7,8 +7,7 @@ import lombok.NonNull;
 public record VerificationEmailRequest(
 
         Long userId,
-        @NonNull
-        String email,
+        @NonNull String email,
         String username,
         String verificationLink
 ) {

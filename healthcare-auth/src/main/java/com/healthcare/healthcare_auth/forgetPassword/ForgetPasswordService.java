@@ -49,11 +49,14 @@ public class ForgetPasswordService {
 
     public void forgetPassword(String email) {
 
-        Optional<Users> usersOptional = usersRepository.findByEmail(email);
-        if (usersOptional.isEmpty()) {
-            throw new EmailNotFoundException("Email not found.");
-        }
-        Users user = usersOptional.get();
+        Users user = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new EmailNotFoundException("Email not found."));
+
+        createPasswordResetTokenAndSendEmail(user);
+    }
+
+    public void createPasswordResetTokenAndSendEmail(Users user) {
+
         passwordResetTokenRepository.deleteByUser(user);
         PasswordResetToken token = PasswordResetToken.builder()
                 .token(UUID.randomUUID().toString())
@@ -84,7 +87,6 @@ public class ForgetPasswordService {
     }
 
     public void setNewPassword(String token, ResetPasswordRequest request) {
-
 
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new InvalidPasswordResetTokenException("Invalid password rest token."));
@@ -123,9 +125,7 @@ public class ForgetPasswordService {
                     .eventType(EventType.NEW_PASSWORD)
                     .build());
         }
-
     }
-
 
     private String resetPasswordLink(String resetPasswordToken) {
         return resetPasswordEmailURL

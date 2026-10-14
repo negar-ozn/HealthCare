@@ -41,7 +41,12 @@ public final class ApiDescription {
             The doctor changed appointment status
             to In progress by visiting a patient.
             """;
+    public static final String COMPLETE_APPOINTMENT = """
+            The doctor changed appointment status
+            to COMPLETED after finishing visiting a patient.
+            """;
     public static final String IN_PROGRESS_APPOINTMENT_SUCCESS = "The inProgress executed successfully.";
+    public static final String COMPLETE_APPOINTMENT_SUCCESS = "The Completed status executed successfully.";
     public static final String APPOINTMENT_RESPONSE = "Appointment Response";
 
     public static final String DEPARTMENT = "Department Service";
@@ -115,10 +120,12 @@ public final class ApiDescription {
     public static final String EDIT_PERSONNEL = "Modifies the personnel's information.";
     public static final String PERSONNEL_MODIFICATION_SUCCESS = "Personnel's information modified successfully.";
     public static final String FIND_PERSONNEL = "Finds personnel by id.";
+    public static final String ALL_PERSONNEL_BY_ROLE = "Finds all personnel by specific role.";
     public static final String PERSONNEL_NOT_FOUND = "Personnel not found.";
     public static final String PERSONNEL_FOUND_SUCCESS = "Personnel found successfully.";
     public static final String ALL_PERSONNEL = "Finds all personnel.";
     public static final String DELETE_PERSONNEL = "Deletes personnel by id.";
+    public static final String VIEW_PERSONNEL_PROFILE = "Displays personnel's profile by user id.";
     public static final String PERSONNEL_DELETED_SUCCESS = "The personnel deleted successfully.";
 
     public static final String SCHEDULE = "Schedule Service.";
@@ -130,10 +137,27 @@ public final class ApiDescription {
     public static final String SCHEDULE_MODIFICATION_SUCCESS = "Schedule modified successfully.";
     public static final String SCHEDULE_NOT_FOUND = "Schedule not found.";
     public static final String FIND_SCHEDULE = "Finds schedule by id.";
+    public static final String FIND_AVAILABLE_SCHEDULES = "Finds available schedules by doctor id and date.";
     public static final String SCHEDULE_FOUND_SUCCESS = "Schedule found successfully.";
     public static final String ALL_SCHEDULE = "Finds all schedules.";
     public static final String SCHEDULES_FOUND_SUCCESS = "Schedules found successfully.";
     public static final String SCHEDULES_NOT_FOUND = "Schedules not found.";
     public static final String DELETE_SCHEDULE = "Deletes schedule by id.";
     public static final String SCHEDULE_DELETED_SUCCESS = "Schedule deleted successfully.";
+
+    public static final String MEDICAL_RECORD = "Medical Record Service.";
+    public static final String MEDICAL_RECORD_API = "Medical Record APIs.";
+    public static final String NEW_MEDICAL_RECORD = "Creates a new medical record.";
+    public static final String MEDICAL_RECORD_ALREADY_EXIST = "Medical record already exist.";
+    public static final String EDIT_MEDICAL_RECORD = "Modifies medical record.";
+    public static final String MEDICAL_RECORD_NOT_FOUND = "Medical record not found.";
+    public static final String FIND_MEDICAL_RECORD = "Finds a medical record by id.";
+    public static final String FIND_ALL_MEDICAL_RECORDS = "Finds all medical records.";
+    public static final String MEDICAL_RECORDS_FOUND_SUCCESS = "All medical records found successfully.";
+    public static final String MEDICAL_RECORDS_NOT_FOUND = "No medical record found.";
+    public static final String MEDICAL_RECORD_CREATION_SUCCESS = "Medical record created successfully.";
+    public static final String MEDICAL_RECORD_MODIFICATION_NOT_AVAILABLE = "Medical record modification is not available.";
+    public static final String MEDICAL_RECORD_FOUND_SUCCESS = "Medical record found successfully.";
+    public static final String DELETE_MEDICAL_RECORD = "Deletes medical record by id.";
+    public static final String MEDICAL_RECORD_DELETE_SUCCESS = "Medical record deleted successfully.";
 }

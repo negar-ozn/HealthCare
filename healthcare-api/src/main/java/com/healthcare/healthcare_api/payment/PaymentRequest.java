@@ -13,11 +13,8 @@ public record PaymentRequest (
 
     Long id,
     Invoice invoice,
-    @NotNull
-    BigDecimal amount,
-    @NotNull
-    Method method,
-    @NotNull
-    LocalDate paymentDate
+    @NotNull BigDecimal amount,
+    @NotNull Method method,
+    @NotNull LocalDate paymentDate
 ){
 }

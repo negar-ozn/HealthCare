@@ -23,35 +23,52 @@ public class Personnel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private String firstName;
+
     @Column(nullable = false)
     private String lastName;
+
     @Column(nullable = false)
     private LocalDate birthdate;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
     @Column(nullable = false, unique = true, length = 10)
     private Long nationalId;
+
     @Column(nullable = false, length = 20)
     private String phone;
+
     @Column(nullable = false ,unique = true)
     private String email;
+
     @Column(nullable = false)
     private String address;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PersonnelRoleName role;
+
     @Column(nullable = false, unique = true)
     private String personnelCode;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+
+    @Column(nullable = false, unique = true)
+    private Long userId;
+
     @Version
     private Long version;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
 }

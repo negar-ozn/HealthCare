@@ -9,8 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = ApiDescription.REFRESH_REQUEST)
 public record RefreshTokenRequest(
 
-        @NotBlank
-        String refreshToken
+        @NotBlank String refreshToken
 ) {}
 
 

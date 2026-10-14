@@ -15,31 +15,18 @@ import java.time.LocalDate;
 public record PatientRequest (
 
     Long id,
-    @NotBlank
-    String firstName,
-    @NotBlank
-    String lastName,
-    @NotNull
-    LocalDate birthdate,
-    @NotBlank
-    String gender,
-    @Pattern(regexp = "\\d{10}")
-    Long nationalId,
-    @NotBlank
-    String phone,
-    @Email
-    String email,
-    @NotBlank
-    String address,
-    @NotNull
-    Boolean arrival,
+    @NotBlank String firstName,
+    @NotBlank String lastName,
+    @NotNull LocalDate birthdate,
+    @NotBlank String gender,
+    @Pattern(regexp = "\\d{10}") Long nationalId,
+    @NotBlank String phone,
+    @Email String email,
+    @NotBlank String address,
+    @NotNull Boolean arrival,
     Insurance insurance,
-    @NotBlank
-    Status status,
-    @NotBlank
-    String patientNumber,
-    @NotNull
-    Instant createdAt,
-    @NotNull
-    Instant updatedAt
+    @NotBlank Status status,
+    @NotBlank String patientNumber,
+    @NotNull Instant createdAt,
+    @NotNull Instant updatedAt
 ) {}

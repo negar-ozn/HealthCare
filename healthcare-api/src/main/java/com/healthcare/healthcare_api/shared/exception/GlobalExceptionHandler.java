@@ -29,6 +29,13 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(AppointmentSlotAlreadyBookedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAppointmentSlotAlreadyBooked(AppointmentSlotAlreadyBookedException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(), ErrorCode.APPOINTMENT_SLOT_ALREADY_BOOKED,
+                ex.getMessage(), request, null);
+    }
 
     @ExceptionHandler(DepartmentAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleDepartmentAlreadyExists(DepartmentAlreadyExistsException ex, HttpServletRequest request) {
@@ -54,35 +61,51 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoSuchAppointmentFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoSuchAppointmentFound(NoSuchAppointmentFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(AppointmentNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleAppointmentNotFound(AppointmentNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_SUCH_APPOINTMENT_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.APPOINTMENT_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoSuchPatientFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoSuchPatientFound(NoSuchPatientFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(DoctorNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleDoctorNotFound(DoctorNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_SUCH_PATIENT_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.DOCTOR_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoSuchRecordFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoSuchRecordFound(NoSuchRecordFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(PatientNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handlePatientNotFound(PatientNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_SUCH_RECORD_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.PATIENT_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoSuchPersonnelFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoSuchPersonnelFound(NoSuchPersonnelFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(RecordNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleRecordNotFound(RecordNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_SUCH_PERSONNEL_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.RECORD_NOT_FOUND,
+                ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(PersonnelNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handlePersonnelNotFound(PersonnelNotFoundException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.PERSONNEL_NOT_FOUND,
+                ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(DepartmentNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleDepartmentNotFound(DepartmentNotFoundException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.DEPARTMENT_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 
@@ -118,11 +141,11 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoBookedAppointmentFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoNoBookedAppointmentFound(NoBookedAppointmentFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(BookedAppointmentNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleBookedAppointmentNotFound(BookedAppointmentNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_BOOKED_APPOINTMENT_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.BOOKED_APPOINTMENT_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 
@@ -142,11 +165,11 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(NoSuchInvoiceFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoSuchInvoiceFound(NoSuchInvoiceFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(InvoiceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvoiceNotFound(InvoiceNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.NO_SUCH_INVOICE_FOUND,
+                HttpStatus.NOT_FOUND.getReasonPhrase(), ErrorCode.INVOICE_NOT_FOUND,
                 ex.getMessage(), request, null);
     }
 

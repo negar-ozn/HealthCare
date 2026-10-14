@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleEmailNotFound(EmailNotFoundException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ErrorCode.USER_NOT_FOUND, ex.getMessage(), request, null);
+                ErrorCode.EMAIL_NOT_FOUND, ex.getMessage(), request, null);
     }
 
     @ApiResponse(responseCode = "404", description = "Role not found",
@@ -147,7 +147,8 @@ public class GlobalExceptionHandler {
     @ApiResponse(responseCode = "401", description = "Invalid email verification token",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(InvalidEmailVerificationTokenException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidEmailVerificationToken(InvalidEmailVerificationTokenException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleInvalidEmailVerificationToken(
+            InvalidEmailVerificationTokenException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 ErrorCode.INVALID_EMAIL_VERIFICATION_TOKEN, ex.getMessage(), request, null);
@@ -156,7 +157,8 @@ public class GlobalExceptionHandler {
     @ApiResponse(responseCode = "401", description = "Email verification token expired",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(EmailVerificationTokenExpiredException.class)
-    public ResponseEntity<ApiErrorResponse> handleEmailVerificationTokenExpired(EmailVerificationTokenExpiredException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleEmailVerificationTokenExpired(
+            EmailVerificationTokenExpiredException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 ErrorCode.EMAIL_VERIFICATION_TOKEN_EXPIRED, ex.getMessage(), request, null);
@@ -165,7 +167,8 @@ public class GlobalExceptionHandler {
     @ApiResponse(responseCode = "401", description = "Invalid password reset token",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(InvalidPasswordResetTokenException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidPasswordResetToken(InvalidPasswordResetTokenException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleInvalidPasswordResetToken(
+            InvalidPasswordResetTokenException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 ErrorCode.INVALID_PASSWORD_REST_TOKEN, ex.getMessage(), request, null);
@@ -174,7 +177,8 @@ public class GlobalExceptionHandler {
     @ApiResponse(responseCode = "401", description = "Password reset token expired",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(PasswordResetTokenExpiredException.class)
-    public ResponseEntity<ApiErrorResponse> handlePasswordResetTokenExpired(PasswordResetTokenExpiredException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handlePasswordResetTokenExpired(
+            PasswordResetTokenExpiredException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 ErrorCode.PASSWORD_REST_TOKEN_EXPIRED, ex.getMessage(), request, null);
@@ -195,13 +199,54 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 ErrorCode.VALIDATION_ERROR, "Validation failed", request, validationErrors);
     }
+
     @ApiResponse(responseCode = "401", description = "Invalid user role",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
     @ExceptionHandler(InvalidRoleException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidRoleException(InvalidRoleException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                ErrorCode.INVALID_REFRESH_TOKEN, ex.getMessage(), request, null);
+                ErrorCode.INVALID_ROLE, ex.getMessage(), request, null);
+    }
+
+    @ApiResponse(responseCode = "400", description = "Invalid password setup token",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+    @ExceptionHandler(InvalidPasswordSetupTokenException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidPasswordSetupTokenException(
+            InvalidPasswordSetupTokenException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ErrorCode.INVALID_PASSWORD_SETUP_TOKEN, ex.getMessage(), request, null);
+    }
+
+    @ApiResponse(responseCode = "410", description = "Password setup token already used",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+    @ExceptionHandler(PasswordSetupTokenAlreadyUsedException.class)
+    public ResponseEntity<ApiErrorResponse> handlePasswordSetupTokenAlreadyUsedException(
+            PasswordSetupTokenAlreadyUsedException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.GONE.value(), HttpStatus.GONE.getReasonPhrase(),
+                ErrorCode.PASSWORD_SETUP_TOKEN_ALREADY_USED, ex.getMessage(), request, null);
+    }
+
+    @ApiResponse(responseCode = "410", description = "Password setup token expired",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+    @ExceptionHandler(PasswordSetupTokenExpiredException.class)
+    public ResponseEntity<ApiErrorResponse> handlePasswordSetupTokenExpiredException(
+            PasswordSetupTokenExpiredException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.GONE.value(), HttpStatus.GONE.getReasonPhrase(),
+                ErrorCode.PASSWORD_SETUP_TOKEN_EXPIRED, ex.getMessage(), request, null);
+    }
+
+    @ApiResponse(responseCode = "410", description = "Password setup token already activated",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+    @ExceptionHandler(PasswordSetupTokenAlreadyActivatedException.class)
+    public ResponseEntity<ApiErrorResponse> handlePasswordSetupTokenAlreadyActivatedException(
+            PasswordSetupTokenAlreadyActivatedException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(HttpStatus.GONE.value(), HttpStatus.GONE.getReasonPhrase(),
+                ErrorCode.PASSWORD_SETUP_TOKEN_ALREADY_ACTIVATED, ex.getMessage(), request, null);
     }
 
     private ResponseEntity<ApiErrorResponse> buildErrorResponse(

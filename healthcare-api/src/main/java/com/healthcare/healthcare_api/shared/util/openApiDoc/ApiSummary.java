@@ -14,6 +14,7 @@ public final class ApiSummary {
     public static final String NO_SHOW_APPOINTMENT = "The patient does not show up.";
     public static final String TODAYS_APPOINTMENT = "Today's booked appointments.";
     public static final String IN_PROGRESS_APPOINTMENT = "In progress appointment.";
+    public static final String COMPLETE_APPOINTMENT = "Complete appointment.";
 
     public static final String NEW_DEPARTMENT = "Create a new department";
     public static final String EDIT_DEPARTMENT = "Modify the department information";
@@ -42,12 +43,21 @@ public final class ApiSummary {
     public static final String NEW_PERSONNEL = "Create a new personnel";
     public static final String EDIT_PERSONNEL = "Modify the personnel information";
     public static final String FIND_PERSONNEL = "Find a personnel by id";
+    public static final String ALL_PERSONNEL_BY_ROLE = "Find all personnel by a specific role";
     public static final String ALL_PERSONNEL = "Find all personnel";
     public static final String DELETE_PERSONNEL = "Delete a personnel by id";
+    public static final String VIEW_PERSONNEL_PROFILE = "Display personnel's profile";
 
     public static final String NEW_SCHEDULE = "Create a new schedule";
     public static final String EDIT_SCHEDULE = "Modify a schedule information";
     public static final String FIND_SCHEDULE = "Find a schedule by id";
+    public static final String FIND_AVAILABLE_SCHEDULES = "Find available schedules by doctor id and date";
     public static final String ALL_SCHEDULE = "Find all schedules";
     public static final String DELETE_SCHEDULE = "Delete a schedule by id";
+
+    public static final String NEW_MEDICAL_RECORD = "Create a new medical record";
+    public static final String EDIT_MEDICAL_RECORD = "Modify the medical record information";
+    public static final String FIND_MEDICAL_RECORD = "Find a medical record by id";
+    public static final String FIND_ALL_MEDICAL_RECORDS = "Find all medical records";
+    public static final String DELETE_MEDICAL_RECORD = "Delete medical record by id";
 }

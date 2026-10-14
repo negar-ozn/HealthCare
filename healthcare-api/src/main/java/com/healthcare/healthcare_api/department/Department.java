@@ -19,14 +19,19 @@ public class Department {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
+
+    @Column(nullable = false, unique = true)
     private String name;
+
     @Column(nullable = false)
     private String description;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
 }

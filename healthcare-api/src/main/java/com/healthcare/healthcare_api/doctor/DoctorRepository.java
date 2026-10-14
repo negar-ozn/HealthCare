@@ -8,8 +8,14 @@ import java.util.List;
 
 @Repository
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
-    @Query(value = "SELECT d FROM Doctor d WHERE d.personnel.firstName=:firstname " +
-            "OR d.personnel.lastName=:lastname OR d.specialization=:specialization OR d.licenceNumber=:licenceNumber")
+
+    @Query("""
+    SELECT d FROM Doctor d
+    WHERE LOWER(d.personnel.firstName) LIKE LOWER(CONCAT('%', :firstname, '%'))
+       OR LOWER(d.personnel.lastName) LIKE LOWER(CONCAT('%', :lastname, '%'))
+       OR LOWER(d.specialization) LIKE LOWER(CONCAT('%', :specialization, '%'))
+       OR d.licenceNumber = :licenceNumber
+    """)
     List<Doctor> findByFirstNameOrLastNameOrSpecializationOrLicenceNumber(String firstname, String lastname,
                                                                           String specialization, Long licenceNumber);
 }

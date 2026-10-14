@@ -23,17 +23,25 @@ public class KafkaTopics {
     public static final String APPOINTMENT_CANCELED = "appointment-canceled";
     public static final String APPOINTMENT_COMPLETED = "appointment-completed";
     public static final String APPOINTMENT_READ = "appointment-read";
+    public static final String APPOINTMENT_RESCHEDULED = "appointment-rescheduled";
+    public static final String APPOINTMENT_DELETED = "appointment-deleted";
+    public static final String APPOINTMENT_CONFIRMED = "appointment-confirmed";
+    public static final String APPOINTMENT_CHECKED_IN = "appointment-checked-in";
+    public static final String APPOINTMENT_NO_SHOWED = "appointment-no-showed";
+    public static final String APPOINTMENT_IN_PROGRESS = "appointment-in-progress";
 
     // Department
     public static final String DEPARTMENT_CREATED = "department-created";
     public static final String DEPARTMENT_UPDATED = "department-updated";
     public static final String DEPARTMENT_READ = "department-read";
+    public static final String DEPARTMENT_DELETED = "department-deleted";
 
     // Medical Record
     public static final String MEDICAL_RECORD_CREATED = "medical-record-created";
     public static final String MEDICAL_RECORD_UPDATED = "medical-record-updated";
     public static final String MEDICAL_RECORD_COMPLETED = "medical-record-completed";
     public static final String MEDICAL_RECORD_READ = "medical-record-read";
+    public static final String MEDICAL_RECORD_DELETED = "medical-record-deleted";
 
     // Payment
     public static final String PAYMENT_CREATED = "payment-created";
@@ -44,6 +52,7 @@ public class KafkaTopics {
     public static final String PERSONNEL_UPDATED = "personnel-updated";
     public static final String PERSONNEL_DELETED = "personnel-deleted";
     public static final String PERSONNEL_READ = "personnel-read";
+    public static final String PROFILE_READ_SELF = "profile-read-self";
 
     // Schedule
     public static final String SCHEDULE_CREATED = "schedule-created";
@@ -66,4 +75,5 @@ public class KafkaTopics {
     public static final String EMAIL_SENT = "email-sent";
     public static final String EMAIL_VERIFIED = "email-verified";
     public static final String FORGET_PASSWORD_EMAIL = "forget-password-email";
+    public static final String PERSONNEL_PASSWORD_SETUP = "personnel-password-setup";
 }

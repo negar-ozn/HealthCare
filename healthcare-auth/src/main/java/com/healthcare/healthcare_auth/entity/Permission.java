@@ -20,15 +20,20 @@ public class Permission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false, unique = true, length = 100)
     @Enumerated(EnumType.STRING)
     private Permissions permission;
+
     @Column(length = 250)
     private String description;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
 }

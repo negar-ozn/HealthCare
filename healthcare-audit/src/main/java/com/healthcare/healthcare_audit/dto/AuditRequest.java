@@ -15,17 +15,13 @@ import lombok.NonNull;
 public record AuditRequest(
 
         Long userId,
-        @NotBlank
-        String username,
-        @NotNull
-        AuditAction action,
+        @NotBlank String username,
+        @NotNull AuditAction action,
         String entityName,
         Long entityId,
-        @NonNull
-        AuditStatus status,
+        @NonNull AuditStatus status,
         String ipAddress,
-        @Size(max = 2000)
-        String details,
+        @Size(max = 2000) String details,
         String emailVerificationToken,
         String passwordRestToken
 ) {

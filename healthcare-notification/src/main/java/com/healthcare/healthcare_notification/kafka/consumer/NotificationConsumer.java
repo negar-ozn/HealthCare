@@ -16,7 +16,7 @@ public class NotificationConsumer {
         this.notificationService = notificationService;
     }
 
-    @KafkaListener(topics = "notification-events",
+    @KafkaListener(topics = {"notification-events", "personnel-password-setup"},
             groupId = "healthcare-notification-group",
             containerFactory = "notificationKafkaListenerContainerFactory")
     public void consume(NotificationEvent event) {

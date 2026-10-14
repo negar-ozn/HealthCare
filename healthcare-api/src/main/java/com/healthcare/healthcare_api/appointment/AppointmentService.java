@@ -1,272 +1,474 @@
 package com.healthcare.healthcare_api.appointment;
 
+import com.healthcare.common_kafka.enums.EntityName;
+import com.healthcare.common_kafka.enums.EventType;
+import com.healthcare.common_kafka.event.CoreEvent;
+import com.healthcare.common_kafka.producer.CommonKafkaProducer;
 import com.healthcare.healthcare_api.doctor.Doctor;
 import com.healthcare.healthcare_api.patient.Patient;
+import com.healthcare.healthcare_api.schedule.Schedule;
+import com.healthcare.healthcare_api.schedule.ScheduleRepository;
+import com.healthcare.healthcare_api.security.SecurityUtils;
+import com.healthcare.healthcare_api.shared.enums.ActionType;
 import com.healthcare.healthcare_api.shared.enums.AppointmentStatus;
 import com.healthcare.healthcare_api.patient.PatientRepository;
+import com.healthcare.healthcare_api.shared.enums.ScheduleStatus;
+import com.healthcare.healthcare_api.shared.enums.Status;
 import com.healthcare.healthcare_api.shared.exception.*;
 import com.healthcare.healthcare_api.shared.util.IdentifierGeneratorService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
+    private final ScheduleRepository scheduleRepository;
     private final PatientRepository patientRepository;
     private final IdentifierGeneratorService generatorService;
+    private final CommonKafkaProducer commonKafkaProducer;
 
-    public AppointmentService(AppointmentRepository appointmentRepository, PatientRepository patientRepository, IdentifierGeneratorService generatorService) {
+    public AppointmentService(AppointmentRepository appointmentRepository, ScheduleRepository scheduleRepository, PatientRepository patientRepository,
+                              IdentifierGeneratorService generatorService, CommonKafkaProducer commonKafkaProducer) {
         this.appointmentRepository = appointmentRepository;
+        this.scheduleRepository = scheduleRepository;
         this.patientRepository = patientRepository;
         this.generatorService = generatorService;
+        this.commonKafkaProducer = commonKafkaProducer;
     }
 
-    // By Patient
-    public Appointment addAppointment(AppointmentRequest request) {
+    @Transactional
+    public AppointmentResponse addAppointment(AppointmentRequest request) {
 
-        appointmentRepository.findById(request.id())
-                .orElseThrow(() -> new AlreadyMadeAppointmentException("The appointment has already made!"));
+        Schedule schedule = scheduleRepository.findById(request.scheduleId())
+                .orElseThrow(() -> new RecordNotFoundException("Schedule not found."));
+
+        if (schedule.getStatus() != ScheduleStatus.AVAILABLE)
+            throw new AppointmentSlotAlreadyBookedException("This schedule is not available.");
+
+        Long patientId = SecurityUtils.currentUserId();
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
+
         Appointment appointment = Appointment.builder()
-                .appointmentDate(request.appointmentDate())
-                .appointmentTime(request.appointmentTime())
+                .appointmentDate(schedule.getDate())
+                .appointmentTime(schedule.getStartTime())
+                .patient(patient)
+                .doctor(schedule.getDoctor())
+                .schedule(schedule)
                 .status(AppointmentStatus.SCHEDULED)
                 .visitReason(request.visitReason())
-                .patient(request.patient())
-                .doctor(request.doctor())
                 .appointmentNumber(generatorService.generatorAppointmentIdentifier())
-//                .version()
                 .build();
-        appointmentRepository.save(appointment);
-        return appointment;
+
+        try {
+            Appointment savedAppointment = appointmentRepository.saveAndFlush(appointment);
+
+            commonKafkaProducer.publishAppointmentBookedEvent(CoreEvent.builder()
+                    .userId(SecurityUtils.currentUserId())
+                    .email(SecurityUtils.currentUserEmail())
+                    .username(SecurityUtils.currentUsername())
+                    .action(ActionType.APPOINTMENT_CREATE.name())
+                    .entityName(EntityName.APPOINTMENT)
+                    .status(Status.SUCCESSFUL.name())
+                    .details("Appointment " + savedAppointment.getAppointmentNumber() + " created successfully.")
+                    .eventType(EventType.APPOINTMENT_BOOKED)
+                    .build());
+
+            return appointmentResponse(savedAppointment);
+        } catch (DataIntegrityViolationException e) {
+            throw new AppointmentSlotAlreadyBookedException("This appointment slot is no longer available.");
+        }
     }
 
-    // By Patient
-    public Appointment rescheduledAppointment(Long id, AppointmentRequest request) {
-
-        Appointment appointmentOp = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NoSuchAppointmentFoundException("No such appointment found!"));
-
-        if (appointmentOp.getStatus().equals(AppointmentStatus.CONFIRMED))
-            throw new RescheduledAppointmentException("After confirmation, appointments cannot be rescheduled.");
-
-        suspendAppointment(id, request.status());
-        Appointment newAppointment = Appointment.builder()
-                .appointmentDate(request.appointmentDate())
-                .appointmentTime(request.appointmentTime())
-                .status(AppointmentStatus.SCHEDULED)
-                .visitReason(request.visitReason())
-                .rescheduled(true)
-                .patient(request.patient())
-                .doctor(request.doctor())
-                .appointmentNumber(generatorService.generatorAppointmentIdentifier())
-//                .version()
-                .build();
-        appointmentRepository.save(newAppointment);
-        return newAppointment;
-    }
-
-    // By Patient
-    public Appointment editAppointment(Long id, AppointmentRequest request) {
-
-        Appointment appointmentOp = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NoSuchAppointmentFoundException("No such appointment found!"));
-
-        if (request.status().equals(AppointmentStatus.CONFIRMED))
-            throw new AppointmentModificationIsUnavailableException("After confirmation appointments cannot be modified");
-        Appointment appointment = Appointment.builder()
-                .id(appointmentOp.getId())
-                .appointmentDate(request.appointmentDate())
-                .appointmentTime(request.appointmentTime())
-                .status(appointmentOp.getStatus())
-                .visitReason(request.visitReason())
-                .cancellationReason(request.cancellationReason())
-                .rescheduled(request.rescheduled())
-                .appointmentNumber(request.appointmentNumber())
-//                .version()
-                .patient(appointmentOp.getPatient())
-                .doctor(request.doctor())
-                .build();
-        appointmentRepository.save(appointment);
-        return appointment;
-    }
-
-    // By Patient
-    public AppointmentResponse getAppointment(Long id) {
+    @Transactional
+    public AppointmentResponse rescheduledAppointment(Long id, AppointmentRequest request) {
 
         Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NoSuchAppointmentFoundException("No such appointment found!"));
-        return AppointmentResponse.builder()
-                .appointmentDate(appointment.getAppointmentDate())
-                .appointmentTime(appointment.getAppointmentTime())
-                .status(appointment.getStatus())
-                .visitReason(appointment.getVisitReason())
-                .cancellationReason(appointment.getCancellationReason())
-                .rescheduled(appointment.getRescheduled())
-                .patient(appointment.getPatient())
-                .doctor(appointment.getDoctor())
-                .appointmentNumber(appointment.getAppointmentNumber())
-                .build();
+                .orElseThrow(() -> new AppointmentNotFoundException("No such appointment found!"));
+
+        if (appointment.getStatus().equals(AppointmentStatus.CONFIRMED))
+            throw new RescheduledAppointmentException("After confirmation, appointments cannot be rescheduled.");
+
+        suspendAppointment(id, appointment.getStatus());
+
+        appointment.setStatus(AppointmentStatus.SCHEDULED);
+        appointment.setVisitReason(request.visitReason());
+        appointment.setRescheduled(true);
+        appointment.setAppointmentNumber(generatorService.generatorAppointmentIdentifier());
+
+        commonKafkaProducer.publishAppointmentRescheduledEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_RESCHEDULE.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " rescheduled successfully.")
+                .eventType(EventType.APPOINTMENT_RESCHEDULED)
+                .build());
+
+        return appointmentResponse(appointment);
+    }
+
+    @Transactional
+    public AppointmentResponse editAppointment(Long id, AppointmentRequest request) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("No such appointment found!"));
+
+        Appointment appointmentStatus = appointmentRepository.findBySchedule_Id(request.scheduleId());
+
+        if (appointmentStatus.getStatus().equals(AppointmentStatus.CONFIRMED))
+            throw new AppointmentModificationIsUnavailableException("After confirmation appointments cannot be modified");
+
+        appointment.setId(appointment.getId());
+        appointment.setStatus(appointment.getStatus());
+        appointment.setVisitReason(request.visitReason());
+        appointment.setPatient(appointment.getPatient());
+
+        commonKafkaProducer.publishAppointmentUpdatedEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_UPDATE.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " updated successfully.")
+                .eventType(EventType.APPOINTMENT_UPDATED)
+                .build());
+
+        return appointmentResponse(appointment);
+    }
+
+    @Transactional
+    public AppointmentResponse getAppointmentById(Long id) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("No such appointment found!"));
+
+        commonKafkaProducer.publishAppointmentReadEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_READ.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " retrieved successfully.")
+                .eventType(EventType.APPOINTMENT_READ)
+                .build());
+
+        return appointmentResponse(appointment);
+    }
+
+    @Transactional
+    public AppointmentResponse getAppointment(LocalDate appointmentDate, String patientNationalId) {
+
+        Appointment appointment =
+                appointmentRepository.findByAppointmentDateAndPatient_nationalId(appointmentDate, Long.valueOf(patientNationalId))
+                        .orElseThrow(() -> new AppointmentNotFoundException("No such appointment found!"));
+
+        commonKafkaProducer.publishAppointmentReadEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_READ.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " retrieved successfully.")
+                .eventType(EventType.APPOINTMENT_READ)
+                .build());
+
+        return appointmentResponse(appointment);
     }
 
     // By Patient, Doctor, and Staff
-    public List<AppointmentResponse> allAppointment(Doctor doctor, Patient patient, LocalDate appointmentDate, Long nationalId) {
+    @Transactional
+    public List<AppointmentResponse> allAppointments(Doctor doctor, Patient patient, LocalDate appointmentDate, Long nationalId) {
 
         List<Appointment> appointmentList =
                 appointmentRepository.findByDoctorOrPatientOrAppointmentDateOrPatient_NationalId(doctor, patient,
                         appointmentDate, nationalId);
-        if (appointmentList.isEmpty())
-            throw new NoSuchPersonnelFoundException("No such record found!");
 
-        return appointmentList.stream().map(appointment -> AppointmentResponse.builder()
-                .appointmentDate(appointment.getAppointmentDate())
-                .appointmentTime(appointment.getAppointmentTime())
-                .status(appointment.getStatus())
-                .visitReason(appointment.getVisitReason())
-                .cancellationReason(appointment.getCancellationReason())
-                .rescheduled(appointment.getRescheduled())
-                .appointmentNumber(appointment.getAppointmentNumber())
-                .createdAt(appointment.getCreatedAt())
-                .updatedAt(appointment.getUpdatedAt())
-                .patient(appointment.getPatient())
-                .doctor(appointment.getDoctor())
-                .build()).toList();
+        if (appointmentList.isEmpty())
+            throw new PersonnelNotFoundException("No such record found!");
+
+        commonKafkaProducer.publishAppointmentReadEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_READ.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("All appointments retrieved successfully.")
+                .eventType(EventType.APPOINTMENT_READ)
+                .build());
+
+        return appointmentList.stream().map(this::appointmentResponse).toList();
     }
 
     // By Patient
-    public void cancelAppointment(Long id, AppointmentStatus status) {
+    @Transactional
+    public void cancelAppointment(Long id, String cancellationReason) {
 
-        Optional<Appointment> appointmentOp = appointmentRepository.findById(id);
-        if (appointmentOp.isPresent() && status.equals(AppointmentStatus.SCHEDULED)) {
-            Appointment appointment = appointmentOp.get();
-            appointment.setId(id);
-            appointment.setStatus(AppointmentStatus.CANCELLED);
-            appointmentRepository.save(appointment);
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found"));
+
+        if (SecurityUtils.hasAuthority("ROLE_PATIENT")) {
+            if (!appointment.getPatient().getId().equals(SecurityUtils.currentUserId()))
+                throw new AccessDeniedException("You cannot cancel another patient's appointment.");
+
+        } else if (!SecurityUtils.hasAuthority("ROLE_RECEPTIONIST")) {
+            throw new AccessDeniedException("You are not allowed to cancel this appointment.");
         }
+
+        if (appointment.getStatus() != AppointmentStatus.SCHEDULED)
+            throw new AppointmentModificationIsUnavailableException("This appointment cannot be cancelled.");
+
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointment.setCancellationReason(cancellationReason);
+
+        commonKafkaProducer.publishAppointmentCanceledEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_CANCEL.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() +
+                        " canceled by user " + SecurityUtils.currentUserId() + " successfully")
+                .eventType(EventType.APPOINTMENT_CANCELED)
+                .build());
     }
 
     // By Admin only!
+    @Transactional
     public void deleteAppointment(Long id) {
 
-        Optional<Appointment> appointmentOp = appointmentRepository.findById(id);
-        appointmentOp.ifPresent(appointment -> appointmentRepository.deleteById(appointment.getId()));
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found."));
+
+        appointmentRepository.deleteById(appointment.getId());
+
+        commonKafkaProducer.publishAppointmentDeletedEvent(CoreEvent.builder()
+                .userId(appointment.getPatient().getId())
+                .email(appointment.getPatient().getEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_DELETE.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " deleted successfully.")
+                .eventType(EventType.APPOINTMENT_DELETED)
+                .build());
+
     }
 
     // By Patient
+    @Transactional
     public void confirmAppointment(Long id, AppointmentStatus status) {
 
-        Optional<Appointment> appointmentOp = appointmentRepository.findById(id);
-        if (appointmentOp.isPresent() && status.equals(AppointmentStatus.SCHEDULED)) {
-            Appointment appointment = appointmentOp.get();
-            appointment.setId(id);
-            appointment.setStatus(AppointmentStatus.CONFIRMED);
-            appointmentRepository.save(appointment);
-        }
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found."));
+
+        if (!status.equals(AppointmentStatus.SCHEDULED))
+            throw new AppointmentModificationIsUnavailableException("Appointment cannot be confirmed.");
+
+        appointment.setId(id);
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
+
+        commonKafkaProducer.publishAppointmentConfirmedEvent(CoreEvent.builder()
+                .userId(appointment.getPatient().getId())
+                .email(appointment.getPatient().getEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_CONFIRM.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " confirmed successfully.")
+                .eventType(EventType.APPOINTMENT_CONFIRMED)
+                .build());
     }
 
     // By Staff
-    public Appointment checkInAppointment(Long nationalId) {
+    @Transactional
+    public AppointmentResponse checkInAppointment(Long nationalId) {
 
-        Appointment appointmentOp = appointmentRepository.findByPatient_NationalId(nationalId)
-                .orElseThrow(() -> new NoSuchRecordFoundException("No scheduled appointment with this national id."));
-        Appointment appointment = Appointment.builder()
-                .id(appointmentOp.getId())
-                .status(AppointmentStatus.CHECKED_IN)
-                .build();
-        appointmentRepository.save(appointment);
+        Appointment appointment = appointmentRepository.findByPatient_NationalId(nationalId)
+                .orElseThrow(() -> new RecordNotFoundException("No scheduled appointment with this national id."));
 
-        Patient patientOp = patientRepository.findPatientByNationalId(nationalId)
-                .orElseThrow(() -> new NoSuchPatientFoundException("No such patient found"));
-        Patient patient = Patient.builder()
-                .id(patientOp.getId())
-                .arrival(Boolean.TRUE)
-                .build();
-        patientRepository.save(patient);
-        return appointment;
+        appointment.setStatus(AppointmentStatus.CHECKED_IN);
+
+        Patient patient = patientRepository.findPatientByNationalId(nationalId)
+                .orElseThrow(() -> new PatientNotFoundException("No such patient found"));
+
+        patient.setArrival(Boolean.TRUE);
+
+        commonKafkaProducer.publishPatientUpdatedEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.PATIENT_UPDATE.name())
+                .entityName(EntityName.PATIENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Patient " + patient.getId() + " updated successfully.")
+                .eventType(EventType.PATIENT_UPDATED)
+                .build());
+
+        commonKafkaProducer.publishAppointmentCheckInEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_CHECK_IN.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " checked in successfully.")
+                .eventType(EventType.APPOINTMENT_CHECKED_IN)
+                .build());
+
+        return appointmentResponse(appointment);
     }
 
     // By Staff
-    public Appointment noShowAppointment(LocalDate appointmentDate, AppointmentStatus status) {
+    @Transactional
+    public AppointmentResponse noShowAppointment(LocalDate appointmentDate, AppointmentStatus status) {
 
-        Appointment appointmentOp = appointmentRepository.findByAppointmentDateAndStatus(appointmentDate, status)
-                .orElseThrow(() -> new NoSuchRecordFoundException("No such record found"));
-        Appointment appointment = Appointment.builder()
-                .id(appointmentOp.getId())
-                .status(AppointmentStatus.NO_SHOW)
-                .build();
-        appointmentRepository.save(appointment);
+        Appointment appointment = appointmentRepository.findByAppointmentDateAndStatus(appointmentDate, status)
+                .orElseThrow(() -> new RecordNotFoundException("No such record found"));
 
-        Patient patientOp = patientRepository.findPatientByNationalId(appointment.getPatient().getNationalId())
-                .orElseThrow(() -> new NoSuchPatientFoundException("No such patient found"));
-        Patient patient = Patient.builder()
-                .id(patientOp.getId())
-                .arrival(Boolean.FALSE)
-                .build();
-        patientRepository.save(patient);
-        return appointment;
+        appointment.setStatus(AppointmentStatus.NO_SHOW);
+
+        Patient patient = patientRepository.findPatientByNationalId(appointment.getPatient().getNationalId())
+                .orElseThrow(() -> new PatientNotFoundException("No such patient found"));
+
+        patient.setArrival(Boolean.FALSE);
+
+        commonKafkaProducer.publishAppointmentNoShowEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_NO_SHOW.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("The patient for appointment " + appointment.getAppointmentNumber() + " did not arrive.")
+                .eventType(EventType.APPOINTMENT_NO_SHOWED)
+                .build());
+
+        commonKafkaProducer.publishPatientUpdatedEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.PATIENT_UPDATE.name())
+                .entityName(EntityName.PATIENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Patient " + patient.getId() + " updated successfully.")
+                .eventType(EventType.PATIENT_UPDATED)
+                .build());
+
+        return appointmentResponse(appointment);
     }
 
     // By doctor
-    public Appointment inProgressAppointment(Long nationalId) {
+    @Transactional
+    public AppointmentResponse inProgressAppointment(Long nationalId) {
 
-        Appointment appointmentOp = appointmentRepository.findByPatient_NationalId(nationalId)
-                .orElseThrow(() -> new NoSuchRecordFoundException("No scheduled appointment with this national id."));
-        Appointment appointment = Appointment.builder()
-                .id(appointmentOp.getId())
-                .status(AppointmentStatus.IN_PROGRESS)
-                .build();
-        appointmentRepository.save(appointment);
-        return appointment;
+        Appointment appointment = appointmentRepository.findByPatient_NationalId(nationalId)
+                .orElseThrow(() -> new RecordNotFoundException("No scheduled appointment with this national id."));
+
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
+
+        commonKafkaProducer.publishAppointmentInProgressEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_IN_PROGRESS.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " is in progress.")
+                .eventType(EventType.APPOINTMENT_IN_PROGRESS)
+                .build());
+
+        return appointmentResponse(appointment);
     }
 
     // By doctor, when prescription has submitted this method will be called!
-    public Appointment completedAppointment(Long nationalId) {
+    @Transactional
+    public AppointmentResponse completedAppointment(Long nationalId) {
 
-        Appointment appointmentOp = appointmentRepository.findByPatient_NationalId(nationalId)
-                .orElseThrow(() -> new NoSuchRecordFoundException("No scheduled appointment with this national id."));
-        Appointment appointment = Appointment.builder()
-                .id(appointmentOp.getId())
-                .status(AppointmentStatus.COMPLETED)
-                .build();
-        appointmentRepository.save(appointment);
-        return appointment;
+        Appointment appointment = appointmentRepository.findByPatient_NationalId(nationalId)
+                .orElseThrow(() -> new RecordNotFoundException("No scheduled appointment with this national id."));
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+
+        commonKafkaProducer.publishAppointmentCompletedEvent(CoreEvent.builder()
+                .userId(appointment.getPatient().getId())
+                .email(appointment.getPatient().getEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_COMPLETE.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Appointment " + appointment.getAppointmentNumber() + " completed successfully.")
+                .eventType(EventType.APPOINTMENT_COMPLETED)
+                .build());
+
+        return appointmentResponse(appointment);
     }
 
     // run by the time of system! main page for staff
+    @Transactional
     public Page<AppointmentResponse> todayAppointments(LocalDate todayAppointmentDate, Pageable pageable) {
 
-        Page<Appointment> todayAppointments = appointmentRepository.findAllByTodayAppointments(todayAppointmentDate, pageable);
-        if (todayAppointments.isEmpty()) {
-            throw new NoBookedAppointmentFoundException("No booked appointment for today!");
-        }
-        return todayAppointments.map(appointment -> AppointmentResponse.builder()
-                .appointmentDate(appointment.getAppointmentDate())
-                .appointmentTime(appointment.getAppointmentTime())
-                .status(appointment.getStatus())
-                .visitReason(appointment.getVisitReason())
-                .cancellationReason(appointment.getCancellationReason())
-                .rescheduled(appointment.getRescheduled())
-                .patient(appointment.getPatient())
-                .doctor(appointment.getDoctor())
-                .appointmentNumber(appointment.getAppointmentNumber())
+        Page<Appointment> todayAppointments =
+                appointmentRepository.findAllByTodayAppointments(todayAppointmentDate, pageable);
+
+        if (todayAppointments.isEmpty())
+            throw new BookedAppointmentNotFoundException("No booked appointment for today!");
+
+        commonKafkaProducer.publishAppointmentReadEvent(CoreEvent.builder()
+                .userId(SecurityUtils.currentUserId())
+                .email(SecurityUtils.currentUserEmail())
+                .username(SecurityUtils.currentUsername())
+                .action(ActionType.APPOINTMENT_READ.name())
+                .entityName(EntityName.APPOINTMENT)
+                .status(Status.SUCCESSFUL.name())
+                .details("Today's all appointments retrieved successfully.")
+                .eventType(EventType.APPOINTMENT_READ)
                 .build());
+
+        return todayAppointments.map(this::appointmentResponse);
     }
 
     private void suspendAppointment(Long id, AppointmentStatus status) {
 
-        Optional<Appointment> appointmentOpt = appointmentRepository.findById(id);
-        if (appointmentOpt.isPresent() && status.equals(AppointmentStatus.SCHEDULED)) {
-            Appointment appointment = appointmentOpt.get();
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found."));
+
+        if (status.equals(AppointmentStatus.SCHEDULED)) {
             appointment.setId(id);
             appointment.setStatus(AppointmentStatus.SUSPENDED);
             appointment.setRescheduled(Boolean.TRUE);
             appointmentRepository.save(appointment);
         }
+    }
 
+    private AppointmentResponse appointmentResponse(Appointment appointment) {
+
+        return new AppointmentResponse(
+                appointment.getId(),
+                appointment.getSchedule().getId(),
+                appointment.getPatient().getId(),
+                appointment.getDoctor().getId(),
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime(),
+                appointment.getStatus(),
+                appointment.getVisitReason(),
+                appointment.getCancellationReason(),
+                appointment.getRescheduled(),
+                appointment.getAppointmentNumber());
     }
 }

@@ -17,6 +17,7 @@ import com.healthcare.healthcare_auth.exception.*;
 import com.healthcare.healthcare_auth.repository.RoleRepository;
 import com.healthcare.healthcare_auth.repository.UsersRepository;
 import com.healthcare.healthcare_auth.security.AuthenticatedUser;
+import com.healthcare.healthcare_auth.util.SecurityUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.transaction.Transactional;
@@ -27,11 +28,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Transactional
 @Service
@@ -48,13 +47,14 @@ public class AuthenticationService {
     private final RefreshTokenService refreshTokenService;
     private final LoginAttemptService loginAttemptService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordSetupService passwordSetupService;
     private final CommonKafkaProducer commonKafkaProducer;
 
     public AuthenticationService(UsersRepository usersRepository, RoleRepository roleRepository,
                                  PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
                                  JwtService jwtService, RefreshTokenService refreshTokenService,
                                  LoginAttemptService loginAttemptService, EmailVerificationService emailVerificationService,
-                                 CommonKafkaProducer commonKafkaProducer) {
+                                 PasswordSetupService passwordSetupService, CommonKafkaProducer commonKafkaProducer) {
         this.usersRepository = usersRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -63,98 +63,92 @@ public class AuthenticationService {
         this.refreshTokenService = refreshTokenService;
         this.loginAttemptService = loginAttemptService;
         this.emailVerificationService = emailVerificationService;
+        this.passwordSetupService = passwordSetupService;
         this.commonKafkaProducer = commonKafkaProducer;
     }
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
-        try {
-
-            // 1. Validate role FIRST (before any DB or expensive operations)
-            if (request.role() == null || !UserRole.ROLE_PATIENT.name().equals(request.role())) {
-                throw new InvalidRoleException("Only ROLE_PATIENT is allowed during self-registration");
-            }
-
-            // 2. Basic defensive checks (even if @Valid exists on controller)
-            if (request.username() == null || request.username().isBlank()) {
-                throw new IllegalArgumentException("Username is required");
-            }
-            if (request.email() == null || request.email().isBlank()) {
-                throw new IllegalArgumentException("Email is required");
-            }
-            if (request.password() == null || request.password().isBlank()) {
-                throw new IllegalArgumentException("Password is required");
-            }
-
-            // 3. Uniqueness checks
-            if (usersRepository.existsByUsername(request.username())) {
-                throw new UsernameAlreadyExistsException("Username is already taken");
-            }
-            if (usersRepository.existsByEmail(request.email())) {
-                throw new EmailAlreadyExistsException("Email is already registered");
-            }
-
-            // 4. Load role
-            Role patientRole = roleRepository.findByRole(UserRole.ROLE_PATIENT)
-                    .orElseThrow(() -> new RoleNotFoundException("Default role ROLE_PATIENT not found"));
-
-            String encryptedPassword = passwordEncoder.encode(request.password());
-
-            // 5. Create and save user
-            Users user = Users.builder()
-                    .username(request.username())
-                    .password(encryptedPassword)
-                    .email(request.email())
-                    .isEnabled(false)
-                    .accountLocked(false)
-                    .failedLoginAttempts(0)
-                    .createdAt(Instant.now())
-                    .build();
-            user.addRole(patientRole);
-            Users savedUser = usersRepository.save(user);
-
-            // 6. Create email verification token
-            EmailVerificationToken emailVerificationToken = emailVerificationService.createToken(savedUser);
-
-            // 7. Publish UserRegistered event
-            commonKafkaProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
-                    .userId(user.getId())
-                    .email(user.getEmail())
-                    .username(user.getUsername())
-                    .verificationLink(verificationLink(emailVerificationToken.getToken()))
-                    .action(ActionType.REGISTER.name())
-                    .status(Status.SUCCESSFUL.name())
-                    .detail("User registered successfully")
-                    .entityName(EntityName.USER)
-                    .eventType(EventType.USER_REGISTERED)
-                    .build());
-
-            // 8. Publish email notification event
-            commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
-                    .correlationId(UUID.randomUUID().toString())
-                    .type(NotificationType.EMAIL_VERIFICATION)
-                    .recipient(savedUser.getEmail())
-                    .sender(NotificationSource.AUTH)
-                    .subject("Verify your email.")
-                    .variables(Map.of("username", savedUser.getUsername(),
-                            "verificationLink", verificationLink(emailVerificationToken.getToken())))
-                    .eventType(EventType.NOTIFICATION_EVENTS)
-                    .userId(savedUser.getId())
-                    .build());
-
-            return RegisterResponse.builder()
-                    .username(savedUser.getUsername())
-                    .email(savedUser.getEmail())
-                    .createdAt(savedUser.getCreatedAt())
-                    .message("Registration successful. Please check your email to verify your account.")
-                    .emailVerificationRequired(true)
-                    .build();
-        } catch (Exception e) {
-            return RegisterResponse.builder()
-                    .message("Something went wrong. Failed to register.")
-                    .build();
+        // 1. Validate role FIRST (before any DB or expensive operations)
+        if (request.role() == null || !UserRole.ROLE_PATIENT.name().equals(request.role())) {
+            throw new InvalidRoleException("Only ROLE_PATIENT is allowed during self-registration");
         }
+
+        // 2. Basic defensive checks (even if @Valid exists on controller)
+        if (request.username() == null || request.username().isBlank()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+        if (request.email() == null || request.email().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (request.password() == null || request.password().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+
+        // 3. Uniqueness checks
+        if (usersRepository.existsByUsername(request.username())) {
+            throw new UsernameAlreadyExistsException("Username is already taken");
+        }
+        if (usersRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyExistsException("Email is already registered");
+        }
+
+        // 4. Load role
+        Role patientRole = roleRepository.findByRole(UserRole.ROLE_PATIENT)
+                .orElseThrow(() -> new RoleNotFoundException("Default role ROLE_PATIENT not found"));
+
+        String encryptedPassword = passwordEncoder.encode(request.password());
+
+        // 5. Create and save user
+        Users user = Users.builder()
+                .username(request.username())
+                .password(encryptedPassword)
+                .email(request.email())
+                .isEnabled(false)
+                .accountLocked(false)
+                .failedLoginAttempts(0)
+                .createdAt(Instant.now())
+                .build();
+        user.addRole(patientRole);
+        Users savedUser = usersRepository.save(user);
+
+        // 6. Create email verification token
+        EmailVerificationToken emailVerificationToken = emailVerificationService.createToken(savedUser);
+
+        // 7. Publish UserRegistered event
+        commonKafkaProducer.publishUserRegisteredEvent(UserRegisteredEvent.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .verificationLink(verificationLink(emailVerificationToken.getToken()))
+                .action(ActionType.REGISTER.name())
+                .status(Status.SUCCESSFUL.name())
+                .detail("User registered successfully")
+                .entityName(EntityName.USER)
+                .eventType(EventType.USER_REGISTERED)
+                .build());
+
+        // 8. Publish email notification event
+        commonKafkaProducer.publishNotificationEvent(NotificationEvent.builder()
+                .correlationId(UUID.randomUUID().toString())
+                .type(NotificationType.EMAIL_VERIFICATION)
+                .recipient(savedUser.getEmail())
+                .sender(NotificationSource.AUTH)
+                .subject("Verify your email.")
+                .variables(Map.of("username", savedUser.getUsername(),
+                        "verificationLink", verificationLink(emailVerificationToken.getToken())))
+                .eventType(EventType.NOTIFICATION_EVENTS)
+                .userId(savedUser.getId())
+                .build());
+
+        return RegisterResponse.builder()
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .createdAt(savedUser.getCreatedAt())
+                .message("Registration successful. Please check your email to verify your account.")
+                .emailVerificationRequired(true)
+                .build();
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -202,8 +196,9 @@ public class AuthenticationService {
         } catch (BadCredentialsException ex) {
             loginAttemptService.loginFailed(request.username());
             commonKafkaProducer.publishUserLoginEvent(CoreEvent.builder()
-                    .userId(request.userId())
+                    .userId(SecurityUtils.currentUserId())
                     .username(request.username())
+                    .email(SecurityUtils.currentUserEmail())
                     .action(ActionType.LOGIN.name())
                     .entityName(EntityName.USER)
                     .status(Status.FAILED.name())
@@ -267,6 +262,7 @@ public class AuthenticationService {
             String username = jwtService.extractUsername(token);
             Users user = usersRepository.findByUsername(username)
                     .orElseThrow(() -> new UserNotFoundException("User not found"));
+
             if (!jwtService.isTokenValid(token, user)) {
                 commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
                         .userId(user.getId())
@@ -286,7 +282,17 @@ public class AuthenticationService {
 
             Set<String> authorities = user.getRoles()
                     .stream()
-                    .map(role -> role.getRole().name())
+                    .flatMap(role -> {
+                        Stream<String> roleAuthority =
+                                Stream.of(role.getRole().name());
+
+                        Stream<String> permissionAuthorities =
+                                role.getPermissions()
+                                        .stream()
+                                        .map(permission -> permission.getPermission().name());
+
+                        return Stream.concat(roleAuthority, permissionAuthorities);
+                    })
                     .collect(Collectors.toSet());
 
             commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
@@ -321,9 +327,7 @@ public class AuthenticationService {
                     .map(role -> role.getRole().name())
                     .collect(Collectors.toSet());
 
-            Instant expiration = e.getClaims()
-                    .getExpiration()
-                    .toInstant();
+            Instant expiration = e.getClaims().getExpiration().toInstant();
 
             commonKafkaProducer.publishIntrospectEvent(CoreEvent.builder()
                     .userId(user.getId())
@@ -345,6 +349,53 @@ public class AuthenticationService {
                     .expiresAt(expiration)
                     .build();
         }
+    }
+
+    @Transactional
+    public InternalUserCreateResponse createInternalUser(InternalUserCreateRequest request) {
+
+        if (request.username() == null || request.username().isBlank()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+        if (request.email() == null || request.email().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (request.role() == null) {
+            throw new InvalidRoleException("Role is required");
+        }
+        if (request.role() == UserRole.ROLE_PATIENT) {
+            throw new InvalidRoleException("ROLE_PATIENT must use public registration");
+        }
+        if (usersRepository.existsByUsername(request.username())) {
+            throw new UsernameAlreadyExistsException("Username is already taken");
+        }
+        if (usersRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyExistsException("Email is already registered");
+        }
+
+        Role role = roleRepository.findByRole(request.role())
+                .orElseThrow(() -> new RoleNotFoundException("Role not found: " + request.role()));
+
+        Users user = Users.builder()
+                .username(request.username())
+                .email(request.email())
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .isEnabled(false)
+                .accountLocked(false)
+                .failedLoginAttempts(0)
+                .build();
+
+        user.addRole(role);
+        Users savedUser = usersRepository.save(user);
+
+        passwordSetupService.createPasswordSetupTokenAndSendEmail(savedUser);
+
+        return new InternalUserCreateResponse(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                request.role()
+        );
     }
 
     private String verificationLink(String verificationToken) {

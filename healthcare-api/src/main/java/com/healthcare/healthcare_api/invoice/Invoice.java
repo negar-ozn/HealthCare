@@ -23,28 +23,39 @@ public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private BigDecimal amount;
+
     @Column(nullable = false)
     private BigDecimal tax;
+
     @Column(nullable = false)
     private BigDecimal insuranceCoveredAmount;
+
     @Column(nullable = false)
     private BigDecimal patientPayableAmount;
+
     @Enumerated(EnumType.STRING)
     private Status status;
+
     @Column(nullable = false, unique = true)
     private String invoiceNumber;
+
     @Version
     private Long version;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
     private Patient patient;
-    @OneToOne
+
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "appointment_id")
     private Appointment appointment;
 }

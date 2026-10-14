@@ -30,7 +30,8 @@ public class AuthenticationController {
     private final EmailVerificationService emailVerificationService;
     private final ForgetPasswordService forgetPasswordService;
 
-    public AuthenticationController(AuthenticationService authService, EmailVerificationService emailVerificationService, ForgetPasswordService forgetPasswordService) {
+    public AuthenticationController(AuthenticationService authService, EmailVerificationService emailVerificationService,
+                                    ForgetPasswordService forgetPasswordService) {
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
         this.forgetPasswordService = forgetPasswordService;
@@ -47,8 +48,7 @@ public class AuthenticationController {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))})
     @PostMapping("/register") // Used when user signs up
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        RegisterResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
 
@@ -57,16 +57,14 @@ public class AuthenticationController {
             @ApiResponse(responseCode = ApiResponseCode.CODE_401, description = ApiDescription.INVALID_CREDENTIAL)})
     @PostMapping("/login") //Used during login
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refreshAccessToken") //Used when access token expired
     @Operation(summary = ApiSummary.REFRESH_TOKEN, description = ApiDescription.REFRESH_TOKEN)
     @ApiResponses(@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.REFRESH_TOKEN_SUCCESS))
     public ResponseEntity<LoginResponse> refreshAccessToken(@Valid @RequestBody RefreshTokenRequest request) {
-        LoginResponse response = authService.refreshAccessToken(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.refreshAccessToken(request));
     }
 
     @PostMapping("/logout") //when user logs out
@@ -103,8 +101,7 @@ public class AuthenticationController {
     @PostMapping("/resetPassword")
     @Operation(summary = ApiSummary.RESET_PASSWORD, description = ApiDescription.RESET_PASSWORD)
     public ResponseEntity<String> resetPassword(@RequestParam String token) {
-        String resetLink = forgetPasswordService.resetPassword(token);
-        return ResponseEntity.ok(resetLink);
+        return ResponseEntity.ok(forgetPasswordService.resetPassword(token));
     }
 
     @PostMapping("/setNewPassword")
@@ -114,4 +111,8 @@ public class AuthenticationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/internal/users")
+    public ResponseEntity<InternalUserCreateResponse> createInternalUser(@RequestBody InternalUserCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.createInternalUser(request));
+    }
 }

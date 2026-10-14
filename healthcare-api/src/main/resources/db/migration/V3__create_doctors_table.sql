@@ -3,7 +3,6 @@ CREATE TABLE doctors
     id                    BIGSERIAL PRIMARY KEY,
     specialization        VARCHAR(255) NOT NULL,
     licence_number        BIGINT       NOT NULL UNIQUE,
-    availability_schedule BOOLEAN      NOT NULL,
     status                VARCHAR(50),
     created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -6,8 +6,6 @@ import com.healthcare.healthcare_api.security.jwt.RemoteAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -52,12 +50,6 @@ public class SecurityConfig {
                         "/", "/home", "/v1/api/auth/login", "/register/**", "/css/**",
                         "/js/**", "/images/**", "/actuator/health").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/admin/**", "/deleteAppointment/", "/deleteDepartment/").hasRole("ADMIN")
-                .requestMatchers("/doctors/**", "/appointments/allAppointments", "/appointments/findAppointment/")
-                .hasAnyRole("DOCTOR")
-                .requestMatchers("/staffs/**", "/appointments/allAppointments", "/appointments/findAppointment/")
-                .hasAnyRole("STAFF")
-                .requestMatchers("/patients/**", "/appointments/**").hasAnyRole("PATIENT")
                 .anyRequest().authenticated());
         http.addFilterBefore(remoteAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.formLogin(AbstractHttpConfigurer::disable);
@@ -69,17 +61,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
-    }
-
-    @Bean
-    public RoleHierarchy roleHierarchy() {
-        return RoleHierarchyImpl.fromHierarchy("""
-                ROLE_ADMIN > ROLE_DOCTOR
-                ROLE_ADMIN > ROLE_STAFF
-                ROLE_ADMIN > ROLE_PATIENT
-                ROLE_DOCTOR > ROLE_PATIENT
-                ROLE_STAFF > ROLE_PATIENT
-                """);
     }
 
     @Bean

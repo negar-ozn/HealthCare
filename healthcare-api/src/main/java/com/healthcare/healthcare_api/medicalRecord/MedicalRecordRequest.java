@@ -15,18 +15,11 @@ public record MedicalRecordRequest(
         Long id,
         Patient patient,
         Doctor doctor,
-        @NotNull
-        LocalDate visitDate,
-        @NotBlank
-        String symptoms,
-        @NotBlank
-        String notes,
-        @NotBlank
-        String prescriptions,
-        @NotBlank
-        String prescriptionsNumber,
-        @NotNull
-        Instant createdAt,
-        @NotNull
-        Instant updatedAt
+        @NotNull LocalDate visitDate,
+        @NotBlank String symptoms,
+        @NotBlank String notes,
+        @NotBlank String prescriptions,
+        @NotBlank String prescriptionsNumber,
+        @NotNull Instant createdAt,
+        @NotNull Instant updatedAt
 ) {}

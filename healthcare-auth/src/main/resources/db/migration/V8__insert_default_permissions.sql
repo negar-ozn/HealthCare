@@ -31,10 +31,12 @@ VALUES ('PATIENT_READ', 'View patient information'),
        ('DOCTOR_READ', 'View doctors information'),
        ('DOCTOR_CREATE', 'Create new doctor'),
        ('DOCTOR_UPDATE', 'Update doctor'),
+       ('DOCTOR_DELETE', 'Delete doctor'),
 
        ('DEPARTMENT_READ', 'View departments information'),
        ('DEPARTMENT_CREATE', 'Create new department'),
        ('DEPARTMENT_UPDATE', 'Update department'),
+       ('DEPARTMENT_DELETE', 'Delete department'),
 
        ('SCHEDULE_READ', 'View schedules information'),
        ('SCHEDULE_CREATE', 'Create new schedule'),
@@ -46,8 +48,15 @@ VALUES ('PATIENT_READ', 'View patient information'),
        ('RECEPTIONIST_UPDATE', 'Update receptionist'),
        ('RECEPTIONIST_DELETE', 'Delete receptionist'),
 
+       ('PERSONNEL_READ', 'View personnel information'),
+       ('PERSONNEL_CREATE', 'Create new personnel'),
+       ('PERSONNEL_UPDATE', 'Update personnel information'),
+       ('PERSONNEL_DELETE', 'Delete personnel'),
+       ('PROFILE_READ_SELF', 'View own profile information'),
+       ('PASSWORD_RESET', 'Reset own password'),
+
        ('LAB_RESULT_CREATE', 'Create new lab result'),
-       ('LAB_RESULT_UPDATE','Update lab result'),
+       ('LAB_RESULT_UPDATE', 'Update lab result'),
        ('LAB_RESULT_READ', 'View lab results');
 
 

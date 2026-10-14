@@ -21,18 +21,25 @@ public class Insurance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false)
     private String providerName;
+
     @Column(nullable = false)
     private BigDecimal coveragePercentage;
+
     @Column(nullable = false)
     private Long policyNumber;
+
     @Column(nullable = false)
     private LocalDate expiryDate;
+
     @CreationTimestamp
     private Instant createdAt;
+
     @UpdateTimestamp
     private Instant updatedAt;
+
     @Version
     private Long version;
 }

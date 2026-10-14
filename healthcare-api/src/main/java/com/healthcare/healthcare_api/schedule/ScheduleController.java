@@ -30,49 +30,54 @@ public class ScheduleController {
     @Operation(summary = ApiSummary.NEW_SCHEDULE, description = ApiDescription.NEW_SCHEDULE)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULE_CREATION_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.SCHEDULE_ALREADY_EXIST)})
-    @PreAuthorize("hasAuthority('RECEPTIONIST_CREATE')")
+    @PreAuthorize("hasAuthority('SCHEDULE_CREATE')")
     @PostMapping("/schedule/newSchedule")
-    public ResponseEntity<Schedule> addSchedule(@Valid @RequestBody ScheduleRequest scheduleRequest) {
-        Schedule schedule = scheduleService.addSchedule(scheduleRequest);
-        return ResponseEntity.ok(schedule);
+    public ResponseEntity<List<ScheduleResponse>> createSchedule(@Valid @RequestBody ScheduleCreateRequest scheduleRequest) {
+        return ResponseEntity.ok(scheduleService.createSchedule(scheduleRequest));
     }
 
     @Operation(summary = ApiSummary.EDIT_SCHEDULE, description = ApiDescription.EDIT_SCHEDULE)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULE_MODIFICATION_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_404, description = ApiDescription.SCHEDULE_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('RECEPTIONIST_UPDATE')")
+    @PreAuthorize("hasAuthority('SCHEDULE_UPDATE')")
     @PutMapping("/schedule/editSchedule/{id}")
-    public ResponseEntity<Schedule> editSchedule(@PathVariable Long id, @Valid @RequestBody ScheduleRequest scheduleRequest) {
-        Schedule schedule = scheduleService.editSchedule(id, scheduleRequest);
-        return ResponseEntity.ok(schedule);
+    public ResponseEntity<ScheduleResponse> editSchedule(@PathVariable Long id, @Valid @RequestBody ScheduleRequest scheduleRequest) {
+        return ResponseEntity.ok(scheduleService.editSchedule(id, scheduleRequest));
+    }
+
+    @Operation(summary = ApiSummary.FIND_AVAILABLE_SCHEDULES, description = ApiDescription.FIND_AVAILABLE_SCHEDULES)
+    @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULE_FOUND_SUCCESS),
+            @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.SCHEDULE_NOT_FOUND)})
+    @PreAuthorize("hasAuthority('SCHEDULE_READ')")
+    @GetMapping("/schedule/getAvailableSchedule")
+    public ResponseEntity<List<ScheduleResponse>> getAvailableSchedules(@RequestParam Long doctorId, LocalDate date) {
+        return ResponseEntity.ok(scheduleService.getAvailableSchedules(doctorId, date));
     }
 
     @Operation(summary = ApiSummary.FIND_SCHEDULE, description = ApiDescription.FIND_SCHEDULE)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULE_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.SCHEDULE_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('RECEPTIONIST_READ')")
+    @PreAuthorize("hasAuthority('SCHEDULE_READ')")
     @GetMapping("/schedule/getSchedule/{id}")
     public ResponseEntity<ScheduleResponse> getSchedule(@PathVariable Long id) {
-        ScheduleResponse schedule = scheduleService.getSchedule(id);
-        return ResponseEntity.ok(schedule);
+        return ResponseEntity.ok(scheduleService.getSchedule(id));
     }
 
     @Operation(summary = ApiSummary.ALL_SCHEDULE, description = ApiDescription.ALL_SCHEDULE)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULES_FOUND_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.SCHEDULES_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('RECEPTIONIST_READ')")
+    @PreAuthorize("hasAuthority('SCHEDULE_READ')")
     @GetMapping("/schedule/getSchedule")
     public ResponseEntity<List<ScheduleResponse>> getAllSchedules(@RequestParam(required = false) String day,
                                                                   @RequestParam(required = false) LocalDate date,
                                                                   @RequestParam(required = false) LocalTime time) {
-        List<ScheduleResponse> schedule = scheduleService.getAllSchedule(day, date, time);
-        return ResponseEntity.ok(schedule);
+        return ResponseEntity.ok(scheduleService.getAllSchedule(day, date, time));
     }
 
     @Operation(summary = ApiSummary.DELETE_SCHEDULE, description = ApiDescription.DELETE_SCHEDULE)
     @ApiResponses({@ApiResponse(responseCode = ApiResponseCode.CODE_200, description = ApiDescription.SCHEDULE_DELETED_SUCCESS),
             @ApiResponse(responseCode = ApiResponseCode.CODE_409, description = ApiDescription.SCHEDULE_NOT_FOUND)})
-    @PreAuthorize("hasAuthority('RECEPTIONIST_DELETE')")
+    @PreAuthorize("hasAuthority('SCHEDULE_DELETE')")
     @DeleteMapping("/schedule/deleteSchedule/{id}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
         scheduleService.deleteSchedule(id);

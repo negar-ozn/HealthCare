@@ -12,20 +12,10 @@ import java.time.Instant;
 @Builder
 public record DoctorRequest(
 
-        Long id,
-        @NotBlank
-        String specialization,
-        Department department,
-        @NotNull
-        Long licenceNumber,
-        @NotNull
-        Boolean availabilitySchedule,
-        @NotBlank
-        Status status,
-        Personnel personnel,
-        @NotNull
-        Instant createdAt,
-        @NotNull
-        Instant updatedAt
+        @NotBlank String specialization,
+        @NotNull Long departmentId,
+        @NotNull Long licenceNumber,
+        @NotNull Status status,
+        @NotNull Long personnelId
 ) {
 }

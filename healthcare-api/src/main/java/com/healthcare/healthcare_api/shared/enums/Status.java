@@ -14,5 +14,7 @@ public enum Status {
     // SCHEDULE
     RESERVED,
     AVAILABLE,
-    CANCELLED;
+    CANCELLED,
+
+    SUCCESSFUL
 }

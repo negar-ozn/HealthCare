@@ -13,10 +13,7 @@ public record DoctorResponse(
         String specialization,
         Department department,
         Long licenceNumber,
-        Boolean availabilitySchedule,
         Status status,
-        Personnel personnel,
-        Instant createdAt,
-        Instant updatedAt
+        Personnel personnel
 ) {
 }

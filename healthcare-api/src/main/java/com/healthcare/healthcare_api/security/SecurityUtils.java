@@ -26,4 +26,18 @@ public final class SecurityUtils {
     public static String currentUsername() {
         return currentUser().getUsername();
     }
+
+    public static String currentUserEmail() {
+        return currentUser().getEmail();
+    }
+
+    public static boolean hasAuthority(String authority) {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication != null &&
+                authentication.getAuthorities()
+                        .stream()
+                        .anyMatch(a -> a.getAuthority().equals(authority));
+    }
 }

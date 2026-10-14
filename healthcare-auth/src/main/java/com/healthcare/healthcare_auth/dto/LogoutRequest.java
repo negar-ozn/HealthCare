@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = ApiDescription.LOGOUT_REQUEST)
 public record LogoutRequest (
 
-        @NotBlank
-        String refreshToken
+        @NotBlank String refreshToken
 ) {
 }
