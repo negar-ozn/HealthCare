@@ -204,8 +204,12 @@ public class CommonKafkaProducer {
         notificationEventKafkaTemplate.send(KafkaTopics.PASSWORD_RESET, event);
     }
 
-    public void publishPersonnelPasswordSetupNotificationEvent(NotificationEvent event) {
-        notificationEventKafkaTemplate.send(KafkaTopics.PERSONNEL_PASSWORD_SETUP, event);
+    public void publishPersonnelPasswordSetupEmailNotificationEvent(NotificationEvent event) {
+        notificationEventKafkaTemplate.send(KafkaTopics.PERSONNEL_PASSWORD_SETUP_LINK, event);
+    }
+
+    public void publishPersonnelPasswordSetupNotificationEvent(CoreEvent event) {
+        coreEventKafkaTemplate.send(KafkaTopics.PERSONNEL_PASSWORD_SETUP, event);
     }
 
     // email forget password sent event

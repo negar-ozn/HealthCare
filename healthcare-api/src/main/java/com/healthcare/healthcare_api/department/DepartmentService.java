@@ -4,11 +4,14 @@ import com.healthcare.common_kafka.enums.EntityName;
 import com.healthcare.common_kafka.enums.EventType;
 import com.healthcare.common_kafka.event.CoreEvent;
 import com.healthcare.common_kafka.producer.CommonKafkaProducer;
+import com.healthcare.healthcare_api.department.cache.DepartmentCacheInvalidationEvent;
+import com.healthcare.healthcare_api.department.cache.DepartmentCacheService;
 import com.healthcare.healthcare_api.security.SecurityUtils;
 import com.healthcare.healthcare_api.shared.enums.ActionType;
 import com.healthcare.healthcare_api.shared.enums.Status;
 import com.healthcare.healthcare_api.shared.exception.DepartmentAlreadyExistsException;
 import com.healthcare.healthcare_api.shared.exception.RecordNotFoundException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +24,16 @@ public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
     private final CommonKafkaProducer commonKafkaProducer;
+    private final DepartmentCacheService departmentCacheService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-    public DepartmentService(DepartmentRepository departmentRepository, CommonKafkaProducer commonKafkaProducer) {
+    public DepartmentService(DepartmentRepository departmentRepository, CommonKafkaProducer commonKafkaProducer,
+                             DepartmentCacheService departmentCacheService, ApplicationEventPublisher applicationEventPublisher) {
 
         this.departmentRepository = departmentRepository;
         this.commonKafkaProducer = commonKafkaProducer;
+        this.departmentCacheService = departmentCacheService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Transactional
@@ -51,6 +59,8 @@ public class DepartmentService {
                 .details(department.getName() + " department created successfully.")
                 .eventType(EventType.DEPARTMENT_CREATED)
                 .build());
+
+        applicationEventPublisher.publishEvent(new DepartmentCacheInvalidationEvent(department.getId()));
 
         return DepartmentResponse.builder()
                 .name(department.getName())
@@ -78,17 +88,18 @@ public class DepartmentService {
                 .eventType(EventType.DEPARTMENT_UPDATED)
                 .build());
 
+        applicationEventPublisher.publishEvent(new DepartmentCacheInvalidationEvent(id));
+
         return DepartmentResponse.builder()
                 .name(updateDepartmentRequest.name())
                 .message(updateDepartmentRequest.name() + " department updated successfully.")
                 .build();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public DepartmentResponse getDepartment(Long id) {
 
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RecordNotFoundException("The department is not available"));
+        DepartmentResponse departmentResponse = departmentCacheService.getDepartment(id);
 
         commonKafkaProducer.publishDepartmentReadEvent(CoreEvent.builder()
                 .userId(SecurityUtils.currentUserId())
@@ -97,23 +108,17 @@ public class DepartmentService {
                 .action(ActionType.DEPARTMENT_READ.name())
                 .entityName(EntityName.DEPARTMENT)
                 .status(Status.SUCCESSFUL.name())
-                .details(department.getName() + " department retrieved successfully.")
+                .details(departmentResponse.name() + " department retrieved successfully.")
                 .eventType(EventType.DEPARTMENT_READ)
                 .build());
 
-        return DepartmentResponse.builder()
-                .name(department.getName())
-                .message(department.getDescription())
-                .build();
+        return departmentResponse;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<DepartmentResponse> allDepartments() {
 
-        List<Department> departmentList = departmentRepository.findAll();
-
-        if (departmentList.isEmpty())
-            throw new RecordNotFoundException("The department is not available");
+        List<DepartmentResponse> departments = departmentCacheService.allDepartments();
 
         commonKafkaProducer.publishDepartmentReadEvent(CoreEvent.builder()
                 .userId(SecurityUtils.currentUserId())
@@ -126,10 +131,7 @@ public class DepartmentService {
                 .eventType(EventType.DEPARTMENT_READ)
                 .build());
 
-        return departmentList.stream().map(department -> DepartmentResponse.builder()
-                .name(department.getName())
-                .message(department.getDescription())
-                .build()).toList();
+        return departments;
     }
 
     @Transactional
@@ -150,6 +152,8 @@ public class DepartmentService {
                 .details(department.getName() + " department deleted successfully.")
                 .eventType(EventType.DEPARTMENT_DELETED)
                 .build());
+
+        applicationEventPublisher.publishEvent(new DepartmentCacheInvalidationEvent(id));
 
     }
 }

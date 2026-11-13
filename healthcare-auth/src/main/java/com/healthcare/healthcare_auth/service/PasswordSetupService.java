@@ -1,13 +1,17 @@
 package com.healthcare.healthcare_auth.service;
 
+import com.healthcare.common_kafka.enums.EntityName;
 import com.healthcare.common_kafka.enums.EventType;
 import com.healthcare.common_kafka.enums.NotificationSource;
 import com.healthcare.common_kafka.enums.NotificationType;
+import com.healthcare.common_kafka.event.CoreEvent;
 import com.healthcare.common_kafka.event.NotificationEvent;
 import com.healthcare.common_kafka.producer.CommonKafkaProducer;
 import com.healthcare.healthcare_auth.dto.PasswordSetupRequest;
 import com.healthcare.healthcare_auth.entity.PasswordSetupToken;
 import com.healthcare.healthcare_auth.entity.Users;
+import com.healthcare.healthcare_auth.enums.ActionType;
+import com.healthcare.healthcare_auth.enums.Status;
 import com.healthcare.healthcare_auth.exception.InvalidPasswordSetupTokenException;
 import com.healthcare.healthcare_auth.exception.PasswordSetupTokenAlreadyActivatedException;
 import com.healthcare.healthcare_auth.exception.PasswordSetupTokenAlreadyUsedException;
@@ -77,10 +81,10 @@ public class PasswordSetupService {
         // 5. Build the setup link.
         String setupLink = passwordSetupUrl + "?token=" + rawToken;
 
-        // 6. Publish the notification event.
-        commonKafkaProducer.publishPersonnelPasswordSetupNotificationEvent(NotificationEvent.builder()
+        // 6. Publish the link email sent event.
+        commonKafkaProducer.publishPersonnelPasswordSetupEmailNotificationEvent(NotificationEvent.builder()
                 .correlationId(UUID.randomUUID().toString())
-                .type(NotificationType.PERSONNEL_PASSWORD_SETUP)
+                .type(NotificationType.PERSONNEL_PASSWORD_SETUP_LINK)
                 .recipient(user.getEmail())
                 .sender(NotificationSource.AUTH)
                 .subject("Set up your healthcare account password")
@@ -88,7 +92,7 @@ public class PasswordSetupService {
                         "username", user.getUsername(),
                         "passwordSetupLink", setupLink
                 ))
-                .eventType(EventType.PERSONNEL_PASSWORD_SETUP)
+                .eventType(EventType.PERSONNEL_PASSWORD_SETUP_LINK)
                 .userId(user.getId())
                 .build()
         );
@@ -127,6 +131,18 @@ public class PasswordSetupService {
 
         // 9. Mark the token as used.
         setupToken.setUsed(true);
+
+        // 10. Publish the personnel password setup event.
+        commonKafkaProducer.publishPersonnelPasswordSetupNotificationEvent(CoreEvent.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .action(ActionType.PERSONNEL_PASSWORD_SETUP.name())
+                .entityName(EntityName.USER)
+                .status(Status.SUCCESSFUL.name())
+                .details("Personnel " + user.getUsername() + " set a password successfully.")
+                .eventType(EventType.PERSONNEL_PASSWORD_SETUP)
+                .build());
     }
 
 

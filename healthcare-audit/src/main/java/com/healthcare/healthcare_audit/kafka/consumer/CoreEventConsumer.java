@@ -27,7 +27,7 @@ public class CoreEventConsumer {
             "personnel-created", "personnel-updated", "personnel-deleted", "personnel-read",
             "schedule-created", "schedule-updated", "schedule-deleted", "schedule-read",
             "user-login", "user-logout", "refresh-token", "introspect", "email-verified", "email-sent",
-            "new-password", "forget-password-email", "profile-read-self"
+            "new-password", "forget-password-email", "profile-read-self", "personnel-password-setup"
     },
             containerFactory = "coreKafkaListenerContainerFactory")
     public void consume(CoreEvent event) {

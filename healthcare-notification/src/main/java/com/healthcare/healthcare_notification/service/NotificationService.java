@@ -176,4 +176,51 @@ public class NotificationService {
         }
         repository.save(notification);
     }
+
+    public void processPersonnelPasswordSetupEmail(NotificationEvent event) {
+
+        Notification notification = Notification.builder()
+                .correlationId(event.correlationId())
+                .recipient(event.recipient())
+                .subject(event.subject())
+                .notificationSource(NotificationSource.valueOf(event.sender().toString()))
+                .type(NotificationType.valueOf(event.type().toString()))
+                .status(NotificationStatus.PENDING)
+                .build();
+        repository.save(notification);
+        try {
+            String html = templateService.render(event);
+            notification.setBody(html);
+            emailService.send(notification);
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(Instant.now());
+
+            commonKafkaProducer.publishForgetPasswordEmailSentEvent(CoreEvent.builder()
+                    .email(event.recipient())
+                    .action(NotificationType.PERSONNEL_PASSWORD_SETUP_LINK.name())
+                    .username((String) event.variables().get("username"))
+                    .entityName(EntityName.NOTIFICATION)
+                    .status(NotificationStatus.SUCCESSFUL.name())
+                    .details("Personnel password setup email sent successfully")
+                    .eventType(EventType.PERSONNEL_PASSWORD_SETUP_LINK)
+                    .userId(event.userId())
+                    .build());
+
+        } catch (Exception ex) {
+            notification.setStatus(NotificationStatus.FAILED);
+            notification.setErrorMessage(ex.getMessage());
+
+            commonKafkaProducer.publishForgetPasswordEmailSentEvent(CoreEvent.builder()
+                    .email(event.recipient())
+                    .action(NotificationType.PERSONNEL_PASSWORD_SETUP_LINK.name())
+                    .username((String) event.variables().get("username"))
+                    .entityName(EntityName.NOTIFICATION)
+                    .status(NotificationStatus.FAILED.name())
+                    .details("Failed to send personnel password setup email")
+                    .eventType(EventType.PERSONNEL_PASSWORD_SETUP_LINK)
+                    .userId(event.userId())
+                    .build());
+        }
+        repository.save(notification);
+    }
 }

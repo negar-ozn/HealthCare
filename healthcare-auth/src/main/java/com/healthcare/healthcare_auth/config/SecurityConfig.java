@@ -45,6 +45,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 //users don't have JWT yet, so all users can access these public endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/password-setup.html").permitAll()
                 .requestMatchers(
                         "/api/v1/auth/register",
                         "/api/v1/auth/verifyEmail",

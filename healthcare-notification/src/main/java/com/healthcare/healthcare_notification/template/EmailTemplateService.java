@@ -24,6 +24,8 @@ public class EmailTemplateService {
             case NEW_PASSWORD -> "new-password";
             case EMAIL_VERIFICATION -> "email-verification";
             case APPOINTMENT_CREATED -> "appointment-created";
+            case PERSONNEL_PASSWORD_SETUP_LINK -> "personnel-password-setup-link";
+            case PERSONNEL_PASSWORD_SETUP -> "password-setup";
             default -> throw new IllegalArgumentException("Unsupported notification type.");
         };
         return templateEngine.process(template, context);

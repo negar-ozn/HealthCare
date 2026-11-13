@@ -76,4 +76,5 @@ public class KafkaTopics {
     public static final String EMAIL_VERIFIED = "email-verified";
     public static final String FORGET_PASSWORD_EMAIL = "forget-password-email";
     public static final String PERSONNEL_PASSWORD_SETUP = "personnel-password-setup";
+    public static final String PERSONNEL_PASSWORD_SETUP_LINK = "personnel-password-setup-link";
 }

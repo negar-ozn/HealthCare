@@ -19,7 +19,8 @@ FROM roles r
                                   'APPOINTMENT_UPDATE',
                                   'LAB_RESULT_READ',
                                   'PROFILE_READ_SELF',
-                                  'PASSWORD_RESET'
+                                  'PASSWORD_RESET',
+                                  'DEPARTMENT_READ'
                   )
 
 WHERE r.role = 'ROLE_DOCTOR';
@@ -35,7 +36,8 @@ FROM roles r
                                   'APPOINTMENT_READ',
                                   'LAB_RESULT_READ',
                                   'PROFILE_READ_SELF',
-                                  'PASSWORD_RESET'
+                                  'PASSWORD_RESET',
+                                  'DEPARTMENT_READ'
                   )
 
 WHERE r.role = 'ROLE_NURSE';
@@ -58,7 +60,8 @@ FROM roles r
                                   'APPOINTMENT_UPDATE',
                                   'APPOINTMENT_CANCEL',
                                   'PROFILE_READ_SELF',
-                                  'PASSWORD_RESET'
+                                  'PASSWORD_RESET',
+                                  'DEPARTMENT_READ'
                   )
 
 WHERE r.role = 'ROLE_RECEPTIONIST';
@@ -73,7 +76,9 @@ FROM roles r
                                   'APPOINTMENT_READ',
                                   'LAB_RESULT_READ',
                                   'PROFILE_READ_SELF',
-                                  'PASSWORD_RESET'
+                                  'PASSWORD_RESET',
+                                  'DEPARTMENT_READ',
+                                  'DOCTOR_READ'
                   )
 
 WHERE r.role = 'ROLE_PATIENT';
@@ -89,7 +94,8 @@ FROM roles r
                                   'LAB_RESULT_UPDATE',
                                   'LAB_RESULT_READ',
                                   'PROFILE_READ_SELF',
-                                  'PASSWORD_RESET'
+                                  'PASSWORD_RESET',
+                                  'DEPARTMENT_READ'
                   )
 
 WHERE r.role = 'ROLE_LAB_TECHNICIAN';
