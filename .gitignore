@@ -1,5 +1,7 @@
-# Environment
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
 
 # IntelliJ IDEA
 .idea/
@@ -7,9 +9,11 @@
 
 # Maven
 target/
-!**/src/main/**/target/
-!**/src/test/**/target/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
