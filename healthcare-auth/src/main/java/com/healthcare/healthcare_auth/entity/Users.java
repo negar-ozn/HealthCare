@@ -31,12 +31,15 @@ public class Users{
     @Column(nullable=false, unique = true, length = 100)
     private String email;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isEnabled = false;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean accountLocked = false;
 
+    @Builder.Default
     @Column(nullable = false)
     private Integer failedLoginAttempts = 0;
 

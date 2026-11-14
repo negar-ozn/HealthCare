@@ -39,6 +39,7 @@ public class Role {
     @Version
     private Long version;
 
+    @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permissions",
